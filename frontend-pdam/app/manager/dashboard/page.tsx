@@ -1,9 +1,11 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import toast from "react-hot-toast";
-
-// Definisi Tipe Data (Sesuai output Backend)
+import toast from "react-hot-toast"
+// 👇 1. Import Helper Cookies
+import { getAuthToken, getUserRole, removeAuthToken } from "@/utils/cookies"
+// Definisi Tipe Data
 interface IStats {
     total_pendapatan: number;
     total_pelanggan: number;
@@ -27,14 +29,17 @@ interface ITagihan {
 export default function ManagerDashboard() {
     const [stats, setStats] = useState<IStats | null>(null)
     const [transaksi, setTransaksi] = useState<ITagihan[]>([])
-    // State untuk menyimpan nama agar tidak error localStorage
     const [managerName, setManagerName] = useState("")
     const router = useRouter()
 
     useEffect(() => {
-        // --- 1. PROTEKSI ROLE & AUTH ---
-        const token = localStorage.getItem("token")
-        const role = localStorage.getItem("role")
+        // --- 2. UBAH PROTEKSI PAKE COOKIES ---
+        const token = getAuthToken() // ✅ Ambil dari Cookies
+        const role = getUserRole()   // ✅ Ambil dari Cookies
+
+        // Catatan: Nama biasanya tidak disimpan di cookie (terlalu panjang). 
+        // Kita tetap ambil dari localStorage (karena login menyimpannya disana) 
+        // atau nanti diambil dari API profil.
         const name = localStorage.getItem("name")
 
         // Cek Login
@@ -43,44 +48,58 @@ export default function ManagerDashboard() {
             return
         }
 
-        // Cek Role (Agar tidak tertukar dengan Pelanggan/Kasir)
+        // Cek Role
         if (role !== "MANAGER") {
-            // Jika Pelanggan nyasar ke sini, lempar balik ke dashboard pelanggan
             if (role === "PELANGGAN") {
                 router.push("/pelanggan/dashboard")
                 return
             }
-            // Jika Kasir nyasar ke sini
             if (role === "KASIR") {
-                // router.push("/kasir/dashboard") // Aktifkan jika sudah ada page kasir
                 toast.error("Akses Ditolak. Halaman ini khusus Manager.")
                 router.push("/login")
                 return
             }
-
-            // Role tidak dikenal
             router.push("/login")
             return
         }
 
-        // --- 2. JIKA LOLOS, LANJUT LOAD DATA ---
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // Set Nama (untuk tampilan UI)
         if (name) setManagerName(name)
 
-        const fetchData = async () => {
-            try {
-                const res = await fetch("http://localhost:8000/manager/dashboard")
-                const data = await res.json()
-                if (data.status) {
-                    setStats(data.stats)
-                    setTransaksi(data.data)
-                }
-            } catch (error) {
-                console.error("Gagal ambil data manager", error)
-            }
-        }
+        // eslint-disable-next-line react-hooks/immutability
         fetchData()
     }, [router])
+
+    const fetchData = async () => {
+        try {
+            // Ambil token terbaru untuk request API
+            const token = getAuthToken()
+
+            const res = await fetch("http://localhost:8000/manager/dashboard", {
+                // ✅ Tambahkan Header Authorization biar request valid
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+
+            const data = await res.json()
+            if (data.status) {
+                setStats(data.stats)
+                setTransaksi(data.data)
+            }
+        } catch (error) {
+            console.error("Gagal ambil data manager", error)
+            toast.error("Gagal memuat data dashboard.")
+        }
+    }
+
+    // --- 3. UBAH FUNGSI LOGOUT ---
+    const handleLogout = () => {
+        removeAuthToken() // ✅ Hapus Cookies
+        localStorage.removeItem("name") // Hapus sisa data nama di localstorage
+        toast.success("Berhasil Logout")
+        router.push('/login')
+    }
 
     // Format Uang (Rp)
     const formatRp = (angka: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(angka)
@@ -113,12 +132,13 @@ export default function ManagerDashboard() {
                         )}
                     </button>
                     <div className="text-right hidden md:block border-l border-slate-700 pl-4">
-                        {/* Menggunakan state managerName agar tidak error */}
                         <p className="text-sm font-bold">{managerName}</p>
                         <p className="text-xs text-indigo-400">Manager Area</p>
                     </div>
+
+                    {/* TOMBOL LOGOUT BARU */}
                     <button
-                        onClick={() => { localStorage.clear(); router.push('/login') }}
+                        onClick={handleLogout}
                         className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
                     >
                         Logout
@@ -126,7 +146,7 @@ export default function ManagerDashboard() {
                 </div>
             </nav>
 
-            <main className="p-8 max-w-7xl mx-auto space-y-8">
+            <main className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
 
                 {/* 1. STATISTIK CARDS (4 KOTAK UTAMA) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -183,7 +203,7 @@ export default function ManagerDashboard() {
                         {/* Progress Bar Mini */}
                         <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
                             <div
-                                className="bg-green-500 h-full"
+                                className="bg-green-500 h-full transition-all duration-1000"
                                 style={{ width: stats ? `${(stats.transaksi_lunas / ((stats.transaksi_lunas + stats.transaksi_tunggakan) || 1)) * 100}%` : '0%' }}
                             ></div>
                         </div>

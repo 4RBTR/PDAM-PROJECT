@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
+// 👇 1. Import Helper Cookies
+import { getAuthToken, getUserRole } from "@/utils/cookies"
+
 interface IPengaduan {
     id: number;
     nama: string;
@@ -19,9 +22,9 @@ export default function ManagerInbox() {
     const router = useRouter()
 
     useEffect(() => {
-        // --- PROTEKSI ROLE ---
-        const token = localStorage.getItem("token")
-        const role = localStorage.getItem("role")
+        // --- 2. GANTI PROTEKSI DENGAN COOKIES ---
+        const token = getAuthToken() // ✅ Ambil dari Cookies
+        const role = getUserRole()   // ✅ Ambil dari Cookies
 
         if (!token) {
             router.push("/login")
@@ -39,7 +42,15 @@ export default function ManagerInbox() {
 
     const fetchMessages = async () => {
         try {
-            const res = await fetch("http://localhost:8000/manager/pengaduan")
+            const token = getAuthToken(); // Ambil token untuk header
+
+            // ✅ Tambahkan Header Authorization
+            const res = await fetch("http://localhost:8000/manager/pengaduan", {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+
             const data = await res.json()
             if (data.status) {
                 setMessages(data.data)
@@ -52,23 +63,27 @@ export default function ManagerInbox() {
         }
     }
 
-    // --- LOGIC BARU: HAPUS DENGAN TOAST CANTIK ---
+    // --- LOGIC HAPUS & TOAST ---
 
-    // 1. Fungsi Eksekusi ke Database (Dijalankan kalau klik "Hapus")
+    // 1. Fungsi Eksekusi ke Database
     const executeDelete = async (id: number) => {
         const toastId = toast.loading("Sedang menghapus pesan...")
+        const token = getAuthToken(); // Ambil token untuk header delete
 
         try {
+            // ✅ Tambahkan Header Authorization
             const res = await fetch(`http://localhost:8000/manager/pengaduan/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
             })
             const data = await res.json()
 
             if (data.status) {
-                // Update UI (Hapus dari list tanpa reload)
+                // Update UI
                 setMessages(prev => prev.filter(msg => msg.id !== id))
 
-                // Ubah loading jadi sukses
                 toast.success("Pesan berhasil dihapus permanen.", {
                     id: toastId,
                     duration: 3000
@@ -82,7 +97,7 @@ export default function ManagerInbox() {
         }
     }
 
-    // 2. Fungsi Menampilkan Pop-up Konfirmasi (Custom Toast)
+    // 2. Fungsi Menampilkan Pop-up Konfirmasi
     const handleDelete = (id: number) => {
         toast.custom((t) => (
             <div
@@ -130,7 +145,7 @@ export default function ManagerInbox() {
                 </div>
             </div>
         ), {
-            duration: 5000, // Hilang sendiri dalam 5 detik kalau didiamkan
+            duration: 5000,
             position: 'top-center'
         })
     }
@@ -212,7 +227,7 @@ export default function ManagerInbox() {
                                 {/* TOMBOL HAPUS */}
                                 <div className="mt-4 flex justify-end pl-16">
                                     <button
-                                        onClick={() => handleDelete(msg.id)} // <--- PANGGIL FUNGSI BARU DISINI
+                                        onClick={() => handleDelete(msg.id)}
                                         className="flex items-center gap-2 text-slate-400 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition duration-200"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

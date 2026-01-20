@@ -1,7 +1,11 @@
 "use client"
+
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+
+// 👇 1. Import Helper Cookies
+import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
 
 // Definisi Struktur Data Tagihan
 interface ITagihan {
@@ -26,7 +30,7 @@ export default function UserDashboard() {
     const [profile, setProfile] = useState<IUser | null>(null)
     const [name, setName] = useState("")
 
-    // State untuk menyimpan ID agar aman dari error Server
+    // State untuk menyimpan ID
     const [userId, setUserId] = useState<string>("")
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -35,15 +39,24 @@ export default function UserDashboard() {
     const router = useRouter()
 
     const ambilData = useCallback(async () => {
-        const id = localStorage.getItem("userId")
-        if (!id) return
+        // ✅ Ambil ID dan Token dari Cookie
+        const id = getUserId()
+        const token = getAuthToken()
+
+        if (!id || !token) return
 
         try {
-            const resT = await fetch(`http://localhost:8000/tagihan/${id}`)
+            // ✅ Tambahkan Header Authorization pada fetch Tagihan
+            const resT = await fetch(`http://localhost:8000/tagihan/${id}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            })
             const dataT = await resT.json()
             if (dataT.status) setTagihan(dataT.data)
 
-            const resP = await fetch(`http://localhost:8000/user/${id}`)
+            // ✅ Tambahkan Header Authorization pada fetch User Profile
+            const resP = await fetch(`http://localhost:8000/user/${id}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            })
             const dataP = await resP.json()
             if (dataP.status) setProfile(dataP.data)
         } catch (error) {
@@ -52,11 +65,11 @@ export default function UserDashboard() {
     }, [])
 
     useEffect(() => {
-        // --- LOGIC PROTEKSI ROLE ---
-        const token = localStorage.getItem("token")
-        const role = localStorage.getItem("role") // Ambil Role
-        const id = localStorage.getItem("userId")
-        const userName = localStorage.getItem("name")
+        // --- LOGIC PROTEKSI ROLE VIA COOKIES ---
+        const token = getAuthToken()
+        const role = getUserRole()
+        const id = getUserId()
+        const userName = getUserName()
 
         // 1. Cek apakah Login?
         if (!token || !id) {
@@ -64,21 +77,18 @@ export default function UserDashboard() {
             return
         }
 
-        // 2. Cek Role (PENTING AGAR TIDAK TERTUKAR)
+        // 2. Cek Role (Redirect jika Manager/Kasir mencoba masuk)
         if (role === "MANAGER") {
-            // Jika Manager nyasar ke sini, tendang ke Dashboard Manager
             router.push("/manager/dashboard")
             return
         }
         if (role === "KASIR") {
-            // Jika Kasir nyasar ke sini, tendang ke Dashboard Kasir (jika ada) atau Login
-            // router.push("/kasir/dashboard") 
             toast.error("Anda login sebagai Kasir. Halaman ini khusus Pelanggan.")
-            router.push("/login")
+            router.push("/kasir/dashboard") // Atau redirect ke login jika perlu
             return
         }
 
-        // 3. Jika Lolos (Benar-benar Pelanggan), baru set state & ambil data
+        // 3. Set State & Ambil Data
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setName(userName || "Pelanggan")
         setUserId(id)
@@ -92,9 +102,17 @@ export default function UserDashboard() {
         const formData = new FormData()
         formData.append("image", selectedFile)
 
+        // ✅ Ambil Token Terbaru
+        const token = getAuthToken()
+
         try {
             const res = await fetch(`http://localhost:8000/tagihan/upload/${id}`, {
                 method: 'POST',
+                headers: {
+                    // Jangan set 'Content-Type': 'multipart/form-data' secara manual,
+                    // fetch akan otomatis mengaturnya beserta boundary-nya.
+                    "Authorization": `Bearer ${token}` // ✅ Auth Header
+                },
                 body: formData
             })
             const data = await res.json()
@@ -113,6 +131,12 @@ export default function UserDashboard() {
         }
     }
 
+    const handleLogout = () => {
+        removeAuthToken() // ✅ Hapus Cookie
+        toast.success("Berhasil keluar")
+        router.push("/login")
+    }
+
     return (
         <div className="p-6 md:p-10 bg-slate-50 min-h-screen text-black font-sans">
             {/* HEADER */}
@@ -125,7 +149,7 @@ export default function UserDashboard() {
                     <button onClick={() => window.print()} className="bg-white border-2 border-sky-600 text-sky-600 hover:bg-sky-50 px-5 py-2 rounded-xl font-bold transition shadow-sm">
                         🖨️ Cetak
                     </button>
-                    <button onClick={() => { localStorage.clear(); router.push("/login") }} className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-bold shadow-md transition">
+                    <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-bold shadow-md transition">
                         Keluar
                     </button>
                 </div>

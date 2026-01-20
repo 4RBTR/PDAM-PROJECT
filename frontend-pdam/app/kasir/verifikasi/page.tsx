@@ -1,12 +1,16 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import toast from "react-hot-toast"
 
+// 👇 1. Import Helper Cookies
+import { getAuthToken, getUserRole } from "@/utils/cookies"
+
 interface ITagihanVerifikasi {
     id: number;
-    userName: string; // Pastikan backend mengirim field ini (hasil join user)
+    userName: string;
     bulan: string;
     tahun: number;
     total_bayar: number;
@@ -20,9 +24,9 @@ export default function VerifikasiPage() {
     const router = useRouter()
 
     useEffect(() => {
-        // --- 1. PROTEKSI HALAMAN ---
-        const token = localStorage.getItem("token")
-        const role = localStorage.getItem("role")
+        // --- 2. PROTEKSI HALAMAN VIA COOKIES ---
+        const token = getAuthToken() // ✅ Ambil dari Cookie
+        const role = getUserRole()   // ✅ Ambil dari Cookie
 
         if (!token) {
             router.push("/login")
@@ -30,6 +34,7 @@ export default function VerifikasiPage() {
         }
 
         if (role !== "KASIR") {
+            // Redirect jika bukan kasir
             router.push("/login")
             return
         }
@@ -39,11 +44,13 @@ export default function VerifikasiPage() {
     }, [])
 
     const loadData = async () => {
-        const token = localStorage.getItem("token")
         try {
+            // ✅ Ambil token terbaru
+            const token = getAuthToken() 
+
             const res = await fetch('http://localhost:8000/tagihan/verifikasi/list', {
                 headers: {
-                    "Authorization": `Bearer ${token}`
+                    "Authorization": `Bearer ${token}` // ✅ Header Auth
                 }
             })
             const data = await res.json()
@@ -52,6 +59,7 @@ export default function VerifikasiPage() {
             }
         } catch (error) {
             console.error("Error fetching verification list", error)
+            toast.error("Gagal memuat data list")
         } finally {
             setLoading(false)
         }
@@ -64,14 +72,15 @@ export default function VerifikasiPage() {
 
         if (!confirm(pesan)) return;
 
-        const token = localStorage.getItem("token")
+        // ✅ Ambil token sebelum request
+        const token = getAuthToken()
 
         try {
             const res = await fetch(`http://localhost:8000/tagihan/verifikasi/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}` // ✅ Header Auth
                 },
                 body: JSON.stringify({ aksi })
             })
@@ -84,7 +93,7 @@ export default function VerifikasiPage() {
             } else {
                 toast.error("Gagal memproses: " + data.message)
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             toast.error("Terjadi kesalahan koneksi ke server.")
         }

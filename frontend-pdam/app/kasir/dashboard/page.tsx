@@ -1,7 +1,11 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+
+// 👇 1. Import Helper Cookies
+import { getAuthToken, getUserRole } from "@/utils/cookies"
 
 export default function KasirDashboard() {
     // State untuk form input tagihan
@@ -15,13 +19,15 @@ export default function KasirDashboard() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [pelanggan, setPelanggan] = useState<any[]>([])
-    const [kasirName, setKasirName] = useState("") // Nama Kasir yang login
+    const [kasirName, setKasirName] = useState("")
     const router = useRouter()
 
     useEffect(() => {
-        // --- 1. PROTEKSI ROLE & AUTH ---
-        const token = localStorage.getItem("token")
-        const role = localStorage.getItem("role")
+        // --- 2. GANTI PROTEKSI DENGAN COOKIES ---
+        const token = getAuthToken() // ✅ Ambil dari Cookies
+        const role = getUserRole()   // ✅ Ambil dari Cookies
+
+        // Catatan: Nama masih bisa diambil dari localStorage jika login menyimpannya disana untuk keperluan UI
         const name = localStorage.getItem("name")
 
         // Cek Login
@@ -48,13 +54,16 @@ export default function KasirDashboard() {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (name) setKasirName(name)
 
-        // --- 2. FETCH DATA PELANGGAN ---
+        // --- 3. FETCH DATA PELANGGAN ---
         const fetchPelanggan = async () => {
             try {
+                // ✅ Ambil token terbaru dari cookies untuk header
+                const currentToken = getAuthToken();
+
                 const res = await fetch('http://localhost:8000/users/pelanggan', {
                     headers: {
                         // Kirim token biar backend tau request valid
-                        "Authorization": `Bearer ${token}`
+                        "Authorization": `Bearer ${currentToken}`
                     }
                 })
                 const data = await res.json()
@@ -76,14 +85,15 @@ export default function KasirDashboard() {
             return
         }
 
-        const token = localStorage.getItem("token")
+        // ✅ Ambil token dari cookies saat submit
+        const token = getAuthToken()
 
         try {
             const res = await fetch('http://localhost:8000/tagihan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Auth Header
+                    'Authorization': `Bearer ${token}` // ✅ Auth Header
                 },
                 body: JSON.stringify(form)
             })
@@ -91,7 +101,7 @@ export default function KasirDashboard() {
 
             if (data.status) {
                 toast.success("Tagihan Berhasil Dibuat!")
-                // Reset form meteran saja, user/bulan biarkan biar cepat input beruntun
+                // Reset form meteran saja
                 setForm({ ...form, meter_awal: 0, meter_akhir: 0 })
             } else {
                 toast.error("Gagal: " + data.message)
@@ -100,6 +110,18 @@ export default function KasirDashboard() {
         } catch (error) {
             toast.error("Error koneksi server")
         }
+    }
+
+    // Fungsi Logout Sederhana
+    const handleLogout = () => {
+        // Hapus data localStorage (Nama, dll)
+        localStorage.clear()
+
+        // Hapus Cookie (Opsional: Jika Anda punya helper removeAuthToken, panggil disini)
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+        document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+
+        router.push('/login')
     }
 
     return (
@@ -118,7 +140,7 @@ export default function KasirDashboard() {
                     <div className="flex items-center gap-4">
                         <span className="text-sm font-medium hidden md:block">Halo, {kasirName}</span>
                         <button
-                            onClick={() => { localStorage.clear(); router.push('/login') }}
+                            onClick={handleLogout}
                             className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm"
                         >
                             Logout

@@ -16,7 +16,7 @@ export default function AboutPage() {
             </nav>
 
             <main className="container mx-auto px-6 py-16 max-w-4xl">
-                <h1 className="text-4xl md:text-5xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">
+                <h1 className="text-4xl md:text-5xl font-black mb-8 text-transparent bg-clip-text bg-linear-to-r from-sky-400 to-indigo-400">
                     Tentang Kami
                 </h1>
 

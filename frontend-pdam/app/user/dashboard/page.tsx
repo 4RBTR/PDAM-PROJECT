@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 
-// Definisi Struktur Data Tagihan (Update: tambah bukti_bayar)
+// Definisi Struktur Data Tagihan
 interface ITagihan {
     id: number;
     bulan: string;
@@ -11,7 +11,7 @@ interface ITagihan {
     meter_akhir: number;
     total_bayar: number;
     status_bayar: string;
-    bukti_bayar: string | null; // Baru
+    bukti_bayar: string | null;
 }
 
 interface IUser {
@@ -25,22 +25,24 @@ export default function UserDashboard() {
     const [profile, setProfile] = useState<IUser | null>(null)
     const [name, setName] = useState("")
 
-    // State khusus untuk upload
+    // State untuk menyimpan ID agar aman dari error Server
+    const [userId, setUserId] = useState<string>("")
+
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
-    const [uploadingId, setUploadingId] = useState<number | null>(null) // Menyimpan ID tagihan mana yang sedang di-upload
+    const [uploadingId, setUploadingId] = useState<number | null>(null)
 
     const router = useRouter()
 
     const ambilData = useCallback(async () => {
-        const userId = localStorage.getItem("userId")
-        if (!userId) return
+        const id = localStorage.getItem("userId")
+        if (!id) return
 
         try {
-            const resT = await fetch(`http://localhost:8000/tagihan/${userId}`)
+            const resT = await fetch(`http://localhost:8000/tagihan/${id}`)
             const dataT = await resT.json()
             if (dataT.status) setTagihan(dataT.data)
 
-            const resP = await fetch(`http://localhost:8000/user/${userId}`)
+            const resP = await fetch(`http://localhost:8000/user/${id}`)
             const dataP = await resP.json()
             if (dataP.status) setProfile(dataP.data)
         } catch (error) {
@@ -49,20 +51,40 @@ export default function UserDashboard() {
     }, [])
 
     useEffect(() => {
+        // --- LOGIC PROTEKSI ROLE ---
         const token = localStorage.getItem("token")
-        const userId = localStorage.getItem("userId")
+        const role = localStorage.getItem("role") // Ambil Role
+        const id = localStorage.getItem("userId")
         const userName = localStorage.getItem("name")
 
-        if (!token || !userId) {
+        // 1. Cek apakah Login?
+        if (!token || !id) {
             router.push("/login")
-        } else {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setName(userName || "Pelanggan")
-            ambilData()
+            return
         }
+
+        // 2. Cek Role (PENTING AGAR TIDAK TERTUKAR)
+        if (role === "MANAGER") {
+            // Jika Manager nyasar ke sini, tendang ke Dashboard Manager
+            router.push("/manager/dashboard")
+            return
+        }
+        if (role === "KASIR") {
+            // Jika Kasir nyasar ke sini, tendang ke Dashboard Kasir (jika ada) atau Login
+            // router.push("/kasir/dashboard") 
+            alert("Anda login sebagai Kasir. Halaman ini khusus Pelanggan.")
+            router.push("/login")
+            return
+        }
+
+        // 3. Jika Lolos (Benar-benar Pelanggan), baru set state & ambil data
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setName(userName || "Pelanggan")
+        setUserId(id)
+        ambilData()
+
     }, [router, ambilData])
 
-    // --- FUNGSI BARU: UPLOAD BUKTI ---
     const handleUpload = async (id: number) => {
         if (!selectedFile) return alert("Harap pilih foto bukti transfer terlebih dahulu!")
 
@@ -72,15 +94,15 @@ export default function UserDashboard() {
         try {
             const res = await fetch(`http://localhost:8000/tagihan/upload/${id}`, {
                 method: 'POST',
-                body: formData // Browser otomatis mengatur Content-Type untuk FormData
+                body: formData
             })
             const data = await res.json()
 
             if (data.status) {
                 alert("Bukti pembayaran berhasil dikirim! Mohon tunggu verifikasi admin.")
-                setUploadingId(null) // Tutup form upload
-                setSelectedFile(null) // Reset file
-                ambilData() // Refresh data
+                setUploadingId(null)
+                setSelectedFile(null)
+                ambilData()
             } else {
                 alert("Gagal upload: " + data.message)
             }
@@ -121,7 +143,7 @@ export default function UserDashboard() {
                     </div>
                     <div className="mt-6 md:mt-0 text-right">
                         <p className="text-xs font-bold opacity-80 uppercase">ID Pelanggan</p>
-                        <p className="text-2xl font-mono font-bold">#00{localStorage.getItem("userId")}</p>
+                        <p className="text-2xl font-mono font-bold">#00{userId}</p>
                     </div>
                 </div>
             </div>

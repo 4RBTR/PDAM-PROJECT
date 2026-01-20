@@ -97,7 +97,6 @@ app.post('/tagihan', async (req, res) => {
         if (cek) return res.status(400).json({ status: false, message: "Tagihan bulan ini sudah ada!" });
 
         const total = (parseInt(meter_akhir) - parseInt(meter_awal)) * 5000;
-        
         const data = await prisma.tagihan.create({
             data: {
                 userId: parseInt(userId),
@@ -132,9 +131,9 @@ app.post('/tagihan/upload/:id', upload.single('image'), async (req, res) => {
 
         await prisma.tagihan.update({
             where: { id: parseInt(id) },
-            data: { 
+            data: {
                 status_bayar: "MENUNGGU_VERIFIKASI",
-                bukti_bayar: req.file.filename 
+                bukti_bayar: req.file.filename
             }
         });
         res.json({ status: true, message: "Bukti terkirim" });
@@ -178,25 +177,33 @@ app.put('/tagihan/verifikasi/:id', async (req, res) => {
 // ==========================================
 // 3. KHUSUS MANAGER (DASHBOARD STATISTIK)
 // ==========================================
-// Endpoint ini yang kita perbarui agar mendukung tampilan modern
+
+// Endpoint Dashboard (UPDATED: Ada Unread Count)
 app.get('/manager/dashboard', async (req, res) => {
     try {
+        // 1. Ambil Tagihan untuk hitung statistik keuangan
         const tagihan = await prisma.tagihan.findMany({
             include: { user: true },
             orderBy: { id: 'desc' }
         });
 
+        // 2. Hitung jumlah pelanggan
         const totalPelanggan = await prisma.user.count({ where: { role: 'PELANGGAN' } });
+
+        // 3. Hitung Pesan Belum Dibaca (FITUR BARU)
+        const unreadCount = await prisma.pengaduan.count({
+            where: { isRead: false }
+        });
 
         let pendapatan = 0;
         let belumBayar = 0;
         let sudahLunas = 0;
-        let totalAir = 0; // <--- INI TAMBAHAN PENTING
+        let totalAir = 0;
 
         tagihan.forEach(t => {
             // Hitung Debit Air (Meter Akhir - Meter Awal)
             const debit = t.meter_akhir - t.meter_awal;
-            totalAir += debit; // Tambahkan ke total global
+            totalAir += debit;
 
             if (t.status_bayar === 'LUNAS') {
                 pendapatan += t.total_bayar;
@@ -213,7 +220,8 @@ app.get('/manager/dashboard', async (req, res) => {
                 total_pelanggan: totalPelanggan,
                 transaksi_lunas: sudahLunas,
                 transaksi_tunggakan: belumBayar,
-                total_air: totalAir // <--- Dikirim ke Frontend
+                total_air: totalAir,
+                unread_pengaduan: unreadCount // <--- Dikirim ke frontend untuk notifikasi merah
             },
             data: tagihan
         });
@@ -222,4 +230,60 @@ app.get('/manager/dashboard', async (req, res) => {
     }
 });
 
-app.listen(8000, () => console.log("🚀 Server PDAM Siap di Port 8000"));
+
+// ==========================================
+// 4. FITUR PENGADUAN (CONTACT FORM)
+// ==========================================
+
+// PUBLIC: Orang kirim pesan (Create)
+app.post('/pengaduan', async (req, res) => {
+    try {
+        const { nama, email, pesan } = req.body;
+        // isRead otomatis false (default di database)
+        const newPengaduan = await prisma.pengaduan.create({
+            data: { nama, email, pesan }
+        });
+        res.json({ status: true, message: "Pesan terkirim!", data: newPengaduan });
+    } catch (error) {
+        res.status(500).json({ status: false, message: "Gagal kirim pesan" });
+    }
+});
+
+// MANAGER ONLY: Baca pesan & Tandai sudah dibaca (Read & Update)
+app.get('/manager/pengaduan', async (req, res) => {
+    try {
+        // 1. Ambil semua pesan
+        const list = await prisma.pengaduan.findMany({
+            orderBy: { createdAt: 'desc' } // Pesan terbaru di atas
+        });
+
+        // 2. UPDATE STATUS: Tandai semua pesan 'unread' menjadi 'read'
+        // Karena manager sedang membuka halaman inbox ini
+        await prisma.pengaduan.updateMany({
+            where: { isRead: false },
+            data: { isRead: true }
+        });
+
+        res.json({ status: true, data: list });
+    } catch (error) {
+        res.status(500).json({ status: false, message: "Gagal ambil data" });
+    }
+});
+
+// MANAGER ONLY: Hapus Pesan
+app.delete('/manager/pengaduan/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.pengaduan.delete({
+            where: { id: parseInt(id) }
+        });
+        res.json({ status: true, message: "Pesan berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ status: false, message: "Gagal menghapus pesan" });
+    }
+});
+
+// Ganti baris app.listen yang lama dengan ini:
+app.listen(8000, '0.0.0.0', () => {
+    console.log("🚀 Server PDAM Siap di Port 8000 dan bisa diakses HP");
+});

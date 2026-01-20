@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mysql"      // Sudah diganti jadi mysql
   url      = env("DATABASE_URL")
 }
 
@@ -20,36 +20,33 @@ model User {
   updatedAt DateTime  @updatedAt
   
   tagihan   Tagihan[] 
-  pengaduan Pengaduan[] // Relasi baru ke pengaduan
 }
 
 model Tagihan {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  user         User     @relation(fields: [userId], references: [id]) 
-  bulan        String
-  tahun        Int
-  meter_awal   Int
-  meter_akhir  Int
-  total_bayar  Int
-  status_bayar String   @default("BELUM_BAYAR") 
-  bukti_bayar  String?  
-  createdAt    DateTime @default(now())
-}
-
-// MODEL BARU: PENGADUAN (Lapor Kerusakan)
-model Pengaduan {
   id          Int      @id @default(autoincrement())
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  judul       String
-  deskripsi   String
-  status      String   @default("PENDING") // PENDING, PROSES, SELESAI
-  tgl_lapor   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id]) 
+  bulan       String
+  tahun       Int
+  meter_awal  Int
+  meter_akhir Int
+  total_bayar Int
+  status_bayar String    @default("BELUM_BAYAR") 
+  bukti_bayar  String?  
+  createdAt    DateTime @default(now())
 }
 
 enum Role {
   PELANGGAN
   KASIR
   MANAGER
+}
+
+model Pengaduan {
+  id        Int      @id @default(autoincrement())
+  nama      String
+  email     String
+  pesan     String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

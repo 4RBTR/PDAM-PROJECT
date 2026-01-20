@@ -1,4 +1,5 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
@@ -18,7 +19,7 @@ export default function ManagerInbox() {
     const router = useRouter()
 
     useEffect(() => {
-        // --- PROTEKSI ROLE (Sama seperti Dashboard) ---
+        // --- PROTEKSI ROLE ---
         const token = localStorage.getItem("token")
         const role = localStorage.getItem("role")
 
@@ -28,7 +29,6 @@ export default function ManagerInbox() {
         }
 
         if (role !== "MANAGER") {
-            // Jika bukan manager, kembalikan ke tempat asal atau login
             if (role === "PELANGGAN") router.push("/pelanggan/dashboard")
             else router.push("/login")
             return
@@ -46,37 +46,96 @@ export default function ManagerInbox() {
             }
         } catch (error) {
             console.error("Error fetch messages", error)
+            toast.error("Gagal mengambil data pesan.")
         } finally {
             setLoading(false)
         }
     }
 
-    // --- FUNGSI HAPUS PESAN ---
-    const handleDelete = async (id: number) => {
-        // 1. Konfirmasi dulu biar gak salah hapus
-        if (!confirm("Apakah Anda yakin ingin menghapus pesan ini secara permanen?")) return;
+    // --- LOGIC BARU: HAPUS DENGAN TOAST CANTIK ---
+
+    // 1. Fungsi Eksekusi ke Database (Dijalankan kalau klik "Hapus")
+    const executeDelete = async (id: number) => {
+        const toastId = toast.loading("Sedang menghapus pesan...")
 
         try {
-            // 2. Panggil API Backend
             const res = await fetch(`http://localhost:8000/manager/pengaduan/${id}`, {
                 method: 'DELETE'
             })
             const data = await res.json()
 
             if (data.status) {
-                // 3. Hapus dari layar tanpa reload halaman (UI Optimistic)
+                // Update UI (Hapus dari list tanpa reload)
                 setMessages(prev => prev.filter(msg => msg.id !== id))
-                toast.success("Pesan berhasil dihapus.")
+
+                // Ubah loading jadi sukses
+                toast.success("Pesan berhasil dihapus permanen.", {
+                    id: toastId,
+                    duration: 3000
+                })
             } else {
-                toast.error("Gagal menghapus pesan: " + data.message)
+                toast.error("Gagal: " + data.message, { id: toastId })
             }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            toast.error("Terjadi kesalahan sistem saat menghapus pesan.")
+            toast.error("Terjadi kesalahan sistem.", { id: toastId })
         }
     }
 
-    // Format Tanggal (Contoh: 20 Jan 2024, 10:30)
+    // 2. Fungsi Menampilkan Pop-up Konfirmasi (Custom Toast)
+    const handleDelete = (id: number) => {
+        toast.custom((t) => (
+            <div
+                className={`${t.visible ? 'animate-enter' : 'animate-leave'
+                    } max-w-md w-full bg-white shadow-2xl rounded-2xl pointer-events-auto flex flex-col ring-1 ring-black ring-opacity-5 border border-slate-100 overflow-hidden`}
+            >
+                <div className="p-4 flex items-start gap-4">
+                    {/* Ikon Sampah */}
+                    <div className="shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Teks Konfirmasi */}
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-slate-900">
+                            Hapus Pesan ini?
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500 leading-relaxed">
+                            Apakah Anda yakin? Data yang dihapus <span className="font-bold text-red-500">tidak bisa dikembalikan</span>.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Tombol Aksi */}
+                <div className="flex border-t border-slate-200 bg-slate-50">
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="w-full border-r border-slate-200 p-3 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition focus:outline-none"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={() => {
+                            toast.dismiss(t.id) // Tutup pop-up
+                            executeDelete(id)   // Jalankan hapus
+                        }}
+                        className="w-full p-3 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 transition focus:outline-none"
+                    >
+                        Ya, Hapus
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 5000, // Hilang sendiri dalam 5 detik kalau didiamkan
+            position: 'top-center'
+        })
+    }
+
+    // Format Tanggal
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
             day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -96,7 +155,7 @@ export default function ManagerInbox() {
                     </button>
                 </div>
                 <h1 className="font-bold text-lg hidden md:block">Kotak Masuk Pengaduan</h1>
-                <div className="w-8"></div> {/* Spacer agar judul di tengah */}
+                <div className="w-8"></div>
             </nav>
 
             <main className="p-4 md:p-8 max-w-4xl mx-auto animate-fade-in">
@@ -153,7 +212,7 @@ export default function ManagerInbox() {
                                 {/* TOMBOL HAPUS */}
                                 <div className="mt-4 flex justify-end pl-16">
                                     <button
-                                        onClick={() => handleDelete(msg.id)}
+                                        onClick={() => handleDelete(msg.id)} // <--- PANGGIL FUNGSI BARU DISINI
                                         className="flex items-center gap-2 text-slate-400 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition duration-200"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
-// 👇 1. Import Helper Cookies
+// 👇 Helper Cookies
 import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
 
-// Definisi Struktur Data Tagihan
+// --- INTERFACES ---
 interface ITagihan {
     id: number;
     bulan: string;
@@ -25,226 +26,319 @@ interface IUser {
     address: string;
 }
 
+// --- COMPONENT UTAMA ---
 export default function UserDashboard() {
+    // 1. STATE & LOGIC (TIDAK DIUBAH - AMAN)
     const [tagihan, setTagihan] = useState<ITagihan[]>([])
     const [profile, setProfile] = useState<IUser | null>(null)
     const [name, setName] = useState("")
-
-    // State untuk menyimpan ID
     const [userId, setUserId] = useState<string>("")
-
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [uploadingId, setUploadingId] = useState<number | null>(null)
+    const [greeting, setGreeting] = useState("")
 
     const router = useRouter()
 
     const ambilData = useCallback(async () => {
-        // ✅ Ambil ID dan Token dari Cookie
         const id = getUserId()
         const token = getAuthToken()
-
         if (!id || !token) return
 
         try {
-            // ✅ Tambahkan Header Authorization pada fetch Tagihan
             const resT = await fetch(`http://localhost:8000/tagihan/${id}`, {
                 headers: { "Authorization": `Bearer ${token}` }
             })
             const dataT = await resT.json()
             if (dataT.status) setTagihan(dataT.data)
 
-            // ✅ Tambahkan Header Authorization pada fetch User Profile
             const resP = await fetch(`http://localhost:8000/user/${id}`, {
                 headers: { "Authorization": `Bearer ${token}` }
             })
             const dataP = await resP.json()
             if (dataP.status) setProfile(dataP.data)
         } catch (error) {
-            console.error("Gagal mengambil data:", error)
+            console.error("Error fetching data", error)
         }
     }, [])
 
     useEffect(() => {
-        // --- LOGIC PROTEKSI ROLE VIA COOKIES ---
+        // Cek Waktu untuk Greeting
+        const hour = new Date().getHours()
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (hour < 12) setGreeting("Selamat Pagi")
+        else if (hour < 18) setGreeting("Selamat Siang")
+        else setGreeting("Selamat Malam")
+
+        // Proteksi Halaman
         const token = getAuthToken()
         const role = getUserRole()
         const id = getUserId()
         const userName = getUserName()
 
-        // 1. Cek apakah Login?
         if (!token || !id) {
             router.push("/login")
             return
         }
-
-        // 2. Cek Role (Redirect jika Manager/Kasir mencoba masuk)
         if (role === "MANAGER") {
             router.push("/manager/dashboard")
             return
         }
         if (role === "KASIR") {
-            toast.error("Anda login sebagai Kasir. Halaman ini khusus Pelanggan.")
-            router.push("/kasir/dashboard") // Atau redirect ke login jika perlu
+            toast.error("Halaman khusus Pelanggan.")
+            router.push("/kasir/dashboard")
             return
         }
 
-        // 3. Set State & Ambil Data
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setName(userName || "Pelanggan")
         setUserId(id)
         ambilData()
-
     }, [router, ambilData])
 
     const handleUpload = async (id: number) => {
-        if (!selectedFile) return toast.error("Harap pilih foto bukti transfer terlebih dahulu!")
+        if (!selectedFile) return toast.error("Pilih foto bukti transfer dulu!")
 
         const formData = new FormData()
         formData.append("image", selectedFile)
-
-        // ✅ Ambil Token Terbaru
         const token = getAuthToken()
+
+        const loadingToast = toast.loading("Mengirim bukti...")
 
         try {
             const res = await fetch(`http://localhost:8000/tagihan/upload/${id}`, {
                 method: 'POST',
-                headers: {
-                    // Jangan set 'Content-Type': 'multipart/form-data' secara manual,
-                    // fetch akan otomatis mengaturnya beserta boundary-nya.
-                    "Authorization": `Bearer ${token}` // ✅ Auth Header
-                },
+                headers: { "Authorization": `Bearer ${token}` },
                 body: formData
             })
             const data = await res.json()
+            toast.dismiss(loadingToast)
 
             if (data.status) {
-                toast.success("Bukti pembayaran berhasil dikirim! Mohon tunggu verifikasi admin.")
+                toast.success("Berhasil! Menunggu verifikasi admin.")
                 setUploadingId(null)
                 setSelectedFile(null)
                 ambilData()
             } else {
-                toast.error("Gagal upload: " + data.message)
+                toast.error("Gagal: " + data.message)
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            toast.error("Terjadi kesalahan koneksi.")
+            toast.dismiss(loadingToast)
+            toast.error("Kesalahan koneksi.")
         }
     }
 
     const handleLogout = () => {
-        removeAuthToken() // ✅ Hapus Cookie
+        removeAuthToken()
         toast.success("Berhasil keluar")
         router.push("/login")
     }
 
+    // Hitung Statistik Sederhana
+    const totalTagihan = tagihan.length
+    const belumLunas = tagihan.filter(t => t.status_bayar === "BELUM_BAYAR").length
+    const menunggu = tagihan.filter(t => t.status_bayar === "MENUNGGU_VERIFIKASI").length
+
+    // --- RENDER UI (PREMIUM LOOK) ---
     return (
-        <div className="p-6 md:p-10 bg-slate-50 min-h-screen text-black font-sans">
-            {/* HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 print:hidden gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-sky-700 italic tracking-tighter">💧 PDAM DIGITAL</h1>
-                    <p className="text-gray-500 text-sm">Sistem Informasi Tagihan Air Mandiri</p>
+        <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-20 selection:bg-indigo-100 selection:text-indigo-700">
+
+            {/* Background Accent */}
+            <div className="fixed top-0 left-0 right-0 h-64 bg-linear-to-br from-indigo-600 to-blue-500 rounded-b-[3rem] shadow-xl z-0 print:hidden"></div>
+
+            {/* --- NAVBAR --- */}
+            <nav className="relative z-50 container mx-auto px-6 py-6 flex justify-between items-center text-white print:text-black">
+                <div className="flex items-center gap-3">
+                    <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl border border-white/20">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    </div>
+                    <div>
+                        <h1 className="font-bold text-xl tracking-tight leading-none">PDAM Pintar</h1>
+                        <p className="text-xs opacity-80 font-medium">Customer Dashboard</p>
+                    </div>
                 </div>
-                <div className="flex space-x-3">
-                    <button onClick={() => window.print()} className="bg-white border-2 border-sky-600 text-sky-600 hover:bg-sky-50 px-5 py-2 rounded-xl font-bold transition shadow-sm">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => window.print()} className="hidden md:flex bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition border border-white/10">
                         🖨️ Cetak
                     </button>
-                    <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl font-bold shadow-md transition">
-                        Keluar
+                    <button onClick={handleLogout} className="bg-red-500/80 hover:bg-red-500 px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-red-500/20 transition">
+                        Logout
                     </button>
                 </div>
-            </div>
+            </nav>
 
-            {/* KARTU PROFIL */}
-            <div className="mb-8 bg-linear-to-r from-sky-600 to-sky-800 p-8 rounded-[2.5rem] shadow-xl text-white">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            {/* --- MAIN CONTENT --- */}
+            <main className="relative z-10 container mx-auto px-6 mt-4">
+
+                {/* 1. SECTION PROFILE & WELCOME */}
+                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl shadow-slate-200/50 mb-8 border border-white/50 backdrop-blur-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 print:shadow-none print:border">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Nama Pelanggan</p>
-                        <h2 className="text-3xl font-black uppercase mb-4">{name}</h2>
-                        <div className="bg-sky-900/30 p-4 rounded-2xl border border-sky-400/20 backdrop-blur-sm">
-                            <p className="text-xs opacity-70 mb-1 uppercase font-bold">Alamat Pemasangan:</p>
-                            <p className="text-sm italic">&quot;{profile?.address || 'Alamat tidak ditemukan'}&quot;</p>
+                        <p className="text-slate-500 font-medium text-sm mb-1 flex items-center gap-2">
+                            <span>👋</span> {greeting},
+                        </p>
+                        <h2 className="text-3xl font-black text-slate-800 capitalize mb-2">{name}</h2>
+                        <div className="items-start gap-2 text-slate-500 text-sm bg-slate-50 px-3 py-2 rounded-lg inline-block border border-slate-100">
+                            <span className="mt-0.5">📍</span> {profile?.address || "Memuat alamat..."}
                         </div>
                     </div>
-                    <div className="mt-6 md:mt-0 text-right">
-                        <p className="text-xs font-bold opacity-80 uppercase">ID Pelanggan</p>
-                        <p className="text-2xl font-mono font-bold">#00{userId}</p>
+                    <div className="text-right hidden md:block">
+                        <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">ID PELANGGAN</p>
+                        <p className="text-3xl font-mono font-bold text-slate-700 tracking-wider">#{userId.padStart(4, '0')}</p>
                     </div>
                 </div>
-            </div>
 
-            {/* DAFTAR TAGIHAN */}
-            <div className="space-y-6">
-                <div className="flex justify-between items-center px-2">
-                    <h3 className="text-xl font-bold text-slate-700 flex items-center">
-                        <span className="mr-2 text-2xl">📊</span> Riwayat & Pembayaran
-                    </h3>
-                    <p className="text-sm text-slate-500 font-bold">
-                        Belum Lunas: <span className="text-red-500">{tagihan.filter(t => t.status_bayar === "BELUM_BAYAR").length} Bulan</span>
-                    </p>
+                {/* 2. STATS SUMMARY (Mini Dashboard) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 print:hidden">
+                    {/* Stat 1 */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">📃</div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase">Total Tagihan</p>
+                            <p className="text-2xl font-black text-slate-800">{totalTagihan}</p>
+                        </div>
+                    </div>
+                    {/* Stat 2 */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xl">⚠️</div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase">Belum Lunas</p>
+                            <p className="text-2xl font-black text-slate-800">{belumLunas}</p>
+                        </div>
+                    </div>
+                    {/* Stat 3 */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl">⏳</div>
+                        <div>
+                            <p className="text-slate-400 text-xs font-bold uppercase">Menunggu Verif</p>
+                            <p className="text-2xl font-black text-slate-800">{menunggu}</p>
+                        </div>
+                    </div>
                 </div>
 
-                {tagihan.map((t, i) => (
-                    <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:border-sky-200 transition-all">
+                {/* 3. LIST TAGIHAN */}
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-bold text-slate-800">Riwayat Pembayaran</h3>
+                        <span className="text-xs font-medium text-slate-400">Terupdate otomatis</span>
+                    </div>
 
-                        {/* Kolom Kiri: Info Tagihan */}
-                        <div className="w-full md:w-1/2">
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="text-sky-600 text-xs font-black uppercase tracking-widest bg-sky-100 px-2 py-1 rounded">{t.bulan} {t.tahun}</span>
-                                {t.status_bayar === "MENUNGGU_VERIFIKASI" && <span className="text-yellow-600 text-xs font-bold bg-yellow-100 px-2 py-1 rounded">⏳ MENUNGGU VERIFIKASI</span>}
-                            </div>
-                            <h4 className="text-2xl font-black text-slate-800">Rp {t.total_bayar.toLocaleString('id-ID')}</h4>
-                            <p className="text-gray-400 text-sm mt-1">Pemakaian: <span className="text-slate-700 font-bold">{t.meter_akhir - t.meter_awal} m³</span></p>
+                    {tagihan.length === 0 ? (
+                        <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-16 text-center">
+                            <div className="text-5xl mb-4 opacity-50">📭</div>
+                            <h4 className="font-bold text-lg text-slate-600">Tidak ada tagihan</h4>
+                            <p className="text-slate-400 text-sm">Semua pembayaran Anda sudah bersih.</p>
                         </div>
+                    ) : (
+                        tagihan.map((t, i) => (
+                            <div key={i} className="group bg-white rounded-2xl p-0 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden print:break-inside-avoid print:shadow-none print:border-black">
 
-                        {/* Kolom Kanan: Aksi (Upload / Status) */}
-                        <div className="w-full md:w-1/2 flex justify-end print:hidden">
-                            {t.status_bayar === "LUNAS" ? (
-                                <div className="flex items-center space-x-2 bg-green-100 text-green-700 px-6 py-3 rounded-2xl font-black text-sm border border-green-200">
-                                    <span>LUNAS</span><span className="text-lg">✅</span>
-                                </div>
-                            ) : t.status_bayar === "MENUNGGU_VERIFIKASI" ? (
-                                <div className="text-right">
-                                    <p className="text-sm font-bold text-slate-500">Bukti Terkirim</p>
-                                    <p className="text-xs text-slate-400">Menunggu admin mengecek...</p>
-                                </div>
-                            ) : (
-                                // LOGIKA UPLOAD
-                                <div className="w-full md:w-auto">
-                                    {uploadingId === t.id ? (
-                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 animate-fade-in">
-                                            <p className="text-xs font-bold mb-2 text-slate-600">Upload Bukti Transfer:</p>
-                                            <input
-                                                title="input"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
-                                                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 mb-3"
-                                            />
-                                            <div className="flex gap-2">
-                                                <button onClick={() => handleUpload(t.id)} className="bg-blue-600 text-white px-4 py-1 rounded-lg text-sm font-bold hover:bg-blue-700">Kirim</button>
-                                                <button onClick={() => { setUploadingId(null); setSelectedFile(null); }} className="bg-gray-300 text-gray-700 px-4 py-1 rounded-lg text-sm font-bold hover:bg-gray-400">Batal</button>
+                                <div className="flex flex-col md:flex-row">
+                                    {/* Bagian Kiri: Informasi Utama */}
+                                    <div className="p-6 md:p-8 flex-1">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                                                    {t.bulan} {t.tahun}
+                                                </div>
+                                                {/* Status Badges */}
+                                                {t.status_bayar === "LUNAS" && <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded border border-green-100">LUNAS</span>}
+                                                {t.status_bayar === "MENUNGGU_VERIFIKASI" && <span className="text-yellow-600 text-xs font-bold bg-yellow-50 px-2 py-1 rounded border border-yellow-100">DIPROSES</span>}
+                                                {t.status_bayar === "BELUM_BAYAR" && <span className="text-red-600 text-xs font-bold bg-red-50 px-2 py-1 rounded border border-red-100">TERTUNGGAK</span>}
                                             </div>
                                         </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setUploadingId(t.id)}
-                                            className="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-red-200 transition-all active:scale-95"
-                                        >
-                                            BAYAR TAGIHAN
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
 
-                        {/* Status Cetak */}
-                        <div className="hidden print:block font-bold text-green-600">
-                            {t.status_bayar === "LUNAS" ? "LUNAS" : "BELUM LUNAS"}
-                        </div>
-                    </div>
-                ))}
-            </div>
+                                        <div className="flex flex-col md:flex-row md:items-baseline gap-1 md:gap-8">
+                                            <div>
+                                                <p className="text-xs text-slate-400 font-bold uppercase mb-1">Total Tagihan</p>
+                                                <h4 className="text-3xl font-black text-slate-800 tracking-tight">Rp {t.total_bayar.toLocaleString('id-ID')}</h4>
+                                            </div>
+                                            <div className="mt-4 md:mt-0">
+                                                <p className="text-xs text-slate-400 font-bold uppercase mb-1">Pemakaian Air</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded">{t.meter_awal}</span>
+                                                    <span className="text-slate-300">➜</span>
+                                                    <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">{t.meter_akhir}</span>
+                                                    <span className="text-sm font-bold text-slate-400 ml-1">({t.meter_akhir - t.meter_awal} m³)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Bagian Kanan: Aksi (Background beda) */}
+                                    <div className={`p-6 md:w-72 flex flex-col justify-center border-t md:border-t-0 md:border-l border-slate-100 print:hidden
+                                        ${t.status_bayar === 'LUNAS' ? 'bg-green-50/50' :
+                                            t.status_bayar === 'MENUNGGU_VERIFIKASI' ? 'bg-yellow-50/50' : 'bg-slate-50'}
+                                    `}>
+
+                                        {/* 1. LUNAS */}
+                                        {t.status_bayar === "LUNAS" ? (
+                                            <div className="text-center">
+                                                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl">🎉</div>
+                                                <p className="font-bold text-green-800">Pembayaran Selesai</p>
+                                                <p className="text-xs text-green-600/80 mt-1">Terima kasih telah membayar tepat waktu.</p>
+                                            </div>
+
+                                            /* 2. MENUNGGU VERIF */
+                                        ) : t.status_bayar === "MENUNGGU_VERIFIKASI" ? (
+                                            <div className="text-center">
+                                                <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 text-xl animate-pulse">⏳</div>
+                                                <p className="font-bold text-yellow-800">Sedang Diverifikasi</p>
+                                                <p className="text-xs text-yellow-600/80 mt-1">Admin kami sedang mengecek bukti Anda.</p>
+                                            </div>
+
+                                            /* 3. BELUM BAYAR (FORM UPLOAD) */
+                                        ) : (
+                                            <>
+                                                {uploadingId === t.id ? (
+                                                    // State Uploading (Form)
+                                                    <div className="animate-in fade-in zoom-in-95 duration-200">
+                                                        <p className="text-xs font-bold text-slate-600 mb-2">Upload Bukti Transfer:</p>
+                                                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-indigo-300 border-dashed rounded-xl cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition mb-3">
+                                                            {selectedFile ? (
+                                                                <span className="text-xs font-bold text-indigo-600 truncate px-2">{selectedFile.name}</span>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center pt-2 pb-3">
+                                                                    <svg className="w-6 h-6 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                                                    <p className="text-[10px] text-indigo-500 font-bold">Klik untuk pilih foto</p>
+                                                                </div>
+                                                            )}
+                                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} />
+                                                        </label>
+
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button onClick={() => { setUploadingId(null); setSelectedFile(null); }} className="py-2 rounded-lg text-xs font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-100">
+                                                                Batal
+                                                            </button>
+                                                            <button onClick={() => handleUpload(t.id)} className="py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200">
+                                                                Kirim
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Tombol Awal (Bayar)
+                                                    <button onClick={() => setUploadingId(t.id)} className="w-full h-full min-h-25 flex flex-col items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition group/btn shadow-lg shadow-indigo-200">
+                                                        <span className="text-2xl group-hover/btn:scale-110 transition duration-300">💳</span>
+                                                        <span className="font-bold text-sm">Bayar Sekarang</span>
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Print Only Status */}
+                                    <div className="hidden print:block absolute top-4 right-4 border-2 border-black p-2 font-bold text-sm">
+                                        STATUS: {t.status_bayar}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Footer Info */}
+                <div className="text-center mt-12 mb-8 text-slate-400 text-sm print:hidden">
+                    <p>&copy; {new Date().getFullYear()} PDAM Pintar System. Butuh bantuan? <a href="#" className="text-indigo-500 font-bold hover:underline">Hubungi CS</a></p>
+                </div>
+
+            </main>
         </div>
     )
 }

@@ -1,10 +1,20 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+import {
+    ArrowLeft,
+    Search,
+    Trash2,
+    Mail,
+    Clock,
+    MessageSquare,
+    RefreshCcw,
+    Inbox
+} from "lucide-react"
 
-// 👇 1. Import Helper Cookies
+// 👇 Import Helper Cookies
 import { getAuthToken, getUserRole } from "@/utils/cookies"
 
 interface IPengaduan {
@@ -16,15 +26,35 @@ interface IPengaduan {
     createdAt: string;
 }
 
+// --- Komponen Skeleton Loading ---
+const InboxSkeleton = () => (
+    <div className="space-y-4 animate-pulse">
+        {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-slate-200"></div>
+                        <div className="space-y-2">
+                            <div className="h-4 w-32 bg-slate-200 rounded"></div>
+                            <div className="h-3 w-48 bg-slate-200 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+                <div className="h-16 bg-slate-100 rounded-xl w-full"></div>
+            </div>
+        ))}
+    </div>
+)
+
 export default function ManagerInbox() {
     const [messages, setMessages] = useState<IPengaduan[]>([])
     const [loading, setLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("") // Fitur Search
     const router = useRouter()
 
     useEffect(() => {
-        // --- 2. GANTI PROTEKSI DENGAN COOKIES ---
-        const token = getAuthToken() // ✅ Ambil dari Cookies
-        const role = getUserRole()   // ✅ Ambil dari Cookies
+        const token = getAuthToken()
+        const role = getUserRole()
 
         if (!token) {
             router.push("/login")
@@ -32,23 +62,21 @@ export default function ManagerInbox() {
         }
 
         if (role !== "MANAGER") {
-            if (role === "PELANGGAN") router.push("/pelanggan/dashboard")
-            else router.push("/login")
+            toast.error("Akses Ditolak")
+            router.push("/login")
             return
         }
 
         fetchMessages()
-    }, [router])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const fetchMessages = async () => {
+        setLoading(true)
         try {
-            const token = getAuthToken(); // Ambil token untuk header
-
-            // ✅ Tambahkan Header Authorization
+            const token = getAuthToken();
             const res = await fetch("http://localhost:8000/manager/pengaduan", {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
+                headers: { "Authorization": `Bearer ${token}` }
             })
 
             const data = await res.json()
@@ -56,188 +84,197 @@ export default function ManagerInbox() {
                 setMessages(data.data)
             }
         } catch (error) {
-            console.error("Error fetch messages", error)
-            toast.error("Gagal mengambil data pesan.")
+            console.error("Error", error)
+            toast.error("Gagal sinkronisasi pesan.")
         } finally {
             setLoading(false)
         }
     }
 
-    // --- LOGIC HAPUS & TOAST ---
+    // --- Filter Logic ---
+    const filteredMessages = useMemo(() => {
+        return messages.filter(msg =>
+            msg.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            msg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            msg.pesan.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+    }, [messages, searchTerm])
 
-    // 1. Fungsi Eksekusi ke Database
+    // --- Logic Hapus ---
     const executeDelete = async (id: number) => {
-        const toastId = toast.loading("Sedang menghapus pesan...")
-        const token = getAuthToken(); // Ambil token untuk header delete
+        const toastId = toast.loading("Menghapus pesan...")
+        const token = getAuthToken();
 
         try {
-            // ✅ Tambahkan Header Authorization
             const res = await fetch(`http://localhost:8000/manager/pengaduan/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
+                headers: { "Authorization": `Bearer ${token}` }
             })
             const data = await res.json()
 
             if (data.status) {
-                // Update UI
                 setMessages(prev => prev.filter(msg => msg.id !== id))
-
-                toast.success("Pesan berhasil dihapus permanen.", {
-                    id: toastId,
-                    duration: 3000
-                })
+                toast.success("Pesan dihapus", { id: toastId })
             } else {
-                toast.error("Gagal: " + data.message, { id: toastId })
+                toast.error(data.message, { id: toastId })
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            toast.error("Terjadi kesalahan sistem.", { id: toastId })
+            console.error(error)
+            toast.error("Gagal menghapus", { id: toastId })
         }
     }
 
-    // 2. Fungsi Menampilkan Pop-up Konfirmasi
     const handleDelete = (id: number) => {
         toast.custom((t) => (
-            <div
-                className={`${t.visible ? 'animate-enter' : 'animate-leave'
-                    } max-w-md w-full bg-white shadow-2xl rounded-2xl pointer-events-auto flex flex-col ring-1 ring-black ring-opacity-5 border border-slate-100 overflow-hidden`}
-            >
-                <div className="p-4 flex items-start gap-4">
-                    {/* Ikon Sampah */}
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-sm w-full bg-white shadow-2xl rounded-2xl pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-100`}>
+                <div className="p-4 flex gap-4">
                     <div className="shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                        <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                            <Trash2 size={20} />
                         </div>
                     </div>
-
-                    {/* Teks Konfirmasi */}
-                    <div className="flex-1">
-                        <p className="text-sm font-bold text-slate-900">
-                            Hapus Pesan ini?
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500 leading-relaxed">
-                            Apakah Anda yakin? Data yang dihapus <span className="font-bold text-red-500">tidak bisa dikembalikan</span>.
-                        </p>
+                    <div>
+                        <p className="text-sm font-bold text-slate-900">Hapus Pesan?</p>
+                        <p className="mt-1 text-xs text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
                     </div>
                 </div>
-
-                {/* Tombol Aksi */}
-                <div className="flex border-t border-slate-200 bg-slate-50">
-                    <button
-                        onClick={() => toast.dismiss(t.id)}
-                        className="w-full border-r border-slate-200 p-3 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition focus:outline-none"
-                    >
+                <div className="flex bg-slate-50 border-t border-slate-100">
+                    <button onClick={() => toast.dismiss(t.id)} className="w-full py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition">
                         Batal
                     </button>
-                    <button
-                        onClick={() => {
-                            toast.dismiss(t.id) // Tutup pop-up
-                            executeDelete(id)   // Jalankan hapus
-                        }}
-                        className="w-full p-3 text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 transition focus:outline-none"
-                    >
-                        Ya, Hapus
+                    <button onClick={() => { toast.dismiss(t.id); executeDelete(id); }} className="w-full py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition border-l border-slate-100">
+                        Hapus
                     </button>
                 </div>
             </div>
-        ), {
-            duration: 5000,
-            position: 'top-center'
-        })
+        ))
     }
 
-    // Format Tanggal
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-        })
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-10">
-            {/* NAVBAR SIMPLE */}
-            <nav className="bg-slate-900 text-white px-8 py-5 flex justify-between items-center shadow-lg sticky top-0 z-50">
-                <div className="flex items-center gap-3">
+        <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800 pb-12">
+
+            {/* --- TOPBAR --- */}
+            <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 shadow-sm">
+                <div className="max-w-4xl mx-auto flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => router.push('/manager/dashboard')}
+                            className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-indigo-600 transition"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div>
+                            <h1 className="font-bold text-lg text-slate-900 leading-none">Kotak Masuk</h1>
+                            <span className="text-[10px] font-medium text-slate-400">Pusat Pengaduan</span>
+                        </div>
+                    </div>
+
                     <button
-                        onClick={() => router.push('/manager/dashboard')}
-                        className="flex items-center gap-2 hover:bg-slate-700 px-3 py-2 rounded-lg transition text-sm font-bold"
+                        onClick={() => fetchMessages()}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition"
+                        title="Refresh Data"
                     >
-                        <span>⬅</span> Kembali ke Dashboard
+                        <RefreshCcw size={18} />
                     </button>
                 </div>
-                <h1 className="font-bold text-lg hidden md:block">Kotak Masuk Pengaduan</h1>
-                <div className="w-8"></div>
             </nav>
 
-            <main className="p-4 md:p-8 max-w-4xl mx-auto animate-fade-in">
-                <div className="mb-6 flex justify-between items-end border-b border-slate-200 pb-4">
+            <main className="px-4 py-8 max-w-4xl mx-auto space-y-6">
+
+                {/* --- HEADER & SEARCH --- */}
+                <div className="flex flex-col md:flex-row justify-between items-end gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800">Daftar Pesan Masuk</h2>
-                        <p className="text-slate-500 text-sm mt-1">Keluhan dan masukan dari pelanggan.</p>
+                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <span>📬</span> Pesan Pelanggan
+                        </h2>
+                        <p className="text-slate-500 text-sm mt-1">Kelola aspirasi dan keluhan pelanggan.</p>
                     </div>
-                    <span className="bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-full text-xs shadow-sm">
-                        Total: {messages.length} Pesan
-                    </span>
+
+                    {/* Search Bar */}
+                    <div className="relative w-full md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Cari pengirim..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                        />
+                    </div>
                 </div>
 
+                {/* --- CONTENT --- */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-                        <p className="text-slate-400">Memuat pesan...</p>
-                    </div>
-                ) : messages.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                        <p className="text-6xl mb-4">📭</p>
-                        <p className="text-slate-500 font-bold text-lg">Belum ada pesan masuk</p>
+                    <InboxSkeleton />
+                ) : filteredMessages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
+                        <div className="bg-slate-50 p-4 rounded-full mb-4">
+                            <Inbox size={40} className="text-slate-300" />
+                        </div>
+                        <p className="text-slate-600 font-bold">Tidak ada pesan ditemukan</p>
                         <p className="text-slate-400 text-sm">Kotak masuk Anda bersih.</p>
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm("")}
+                                className="mt-4 text-indigo-600 text-sm hover:underline"
+                            >
+                                Hapus pencarian
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {messages.map((msg) => (
-                            <div key={msg.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-200 transition relative group">
+                        {filteredMessages.map((msg) => (
+                            <div key={msg.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-200 transition group relative">
 
-                                {/* HEADER PESAN */}
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-4">
-                                        {/* Avatar Inisial */}
-                                        <div className="w-12 h-12 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                                        {/* Avatar */}
+                                        <div className="w-12 h-12 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-indigo-200 shadow-lg">
                                             {msg.nama.charAt(0).toUpperCase()}
                                         </div>
+
                                         <div>
-                                            <h3 className="font-bold text-lg text-slate-800 leading-tight">{msg.nama}</h3>
-                                            <p className="text-sm text-indigo-500 font-medium">{msg.email}</p>
+                                            <h3 className="font-bold text-slate-800 text-lg leading-tight">{msg.nama}</h3>
+                                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                                <Mail size={12} />
+                                                <span>{msg.email}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                                        {formatDate(msg.createdAt)}
-                                    </span>
+
+                                    <div className="flex flex-col items-end gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                                            <Clock size={10} />
+                                            {formatDate(msg.createdAt)}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                {/* ISI PESAN */}
-                                <div className="pl-16">
-                                    <div className="bg-slate-50 p-5 rounded-r-2xl rounded-bl-2xl text-slate-700 text-sm leading-relaxed border border-slate-100 italic">
+                                {/* Body Pesan */}
+                                <div className="pl-0 md:pl-16">
+                                    <div className="bg-slate-50/80 p-5 rounded-2xl rounded-tl-none text-slate-700 text-sm leading-relaxed border border-slate-100 relative">
+                                        <MessageSquare size={16} className="absolute -top-3 left-0 text-slate-300 transform -scale-x-100" />
                                         &quot;{msg.pesan}&quot;
                                     </div>
                                 </div>
 
-                                {/* TOMBOL HAPUS */}
-                                <div className="mt-4 flex justify-end pl-16">
+                                {/* Actions */}
+                                <div className="mt-4 flex justify-end gap-2 pl-0 md:pl-16 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                     <button
                                         onClick={() => handleDelete(msg.id)}
-                                        className="flex items-center gap-2 text-slate-400 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition duration-200"
+                                        className="flex items-center gap-2 text-slate-400 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-xl text-xs font-bold transition"
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                        </svg>
-                                        Hapus Pesan
+                                        <Trash2 size={14} />
+                                        Hapus
                                     </button>
                                 </div>
+
                             </div>
                         ))}
                     </div>

@@ -28,7 +28,7 @@ interface IUser {
 
 // --- COMPONENT UTAMA ---
 export default function UserDashboard() {
-    // 1. STATE & LOGIC (TIDAK DIUBAH - AMAN)
+    // 1. STATE & LOGIC
     const [tagihan, setTagihan] = useState<ITagihan[]>([])
     const [profile, setProfile] = useState<IUser | null>(null)
     const [name, setName] = useState("")
@@ -62,14 +62,12 @@ export default function UserDashboard() {
     }, [])
 
     useEffect(() => {
-        // Cek Waktu untuk Greeting
         const hour = new Date().getHours()
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (hour < 12) setGreeting("Selamat Pagi")
         else if (hour < 18) setGreeting("Selamat Siang")
         else setGreeting("Selamat Malam")
 
-        // Proteksi Halaman
         const token = getAuthToken()
         const role = getUserRole()
         const id = getUserId()
@@ -156,6 +154,11 @@ export default function UserDashboard() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    {/* 👇 TOMBOL PENGADUAN DI NAVBAR */}
+                    <button onClick={() => router.push('/user/pengaduan')} className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition border border-white/10">
+                        <span>📢</span> Pengaduan
+                    </button>
+
                     <button onClick={() => window.print()} className="hidden md:flex bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition border border-white/10">
                         🖨️ Cetak
                     </button>
@@ -185,8 +188,8 @@ export default function UserDashboard() {
                     </div>
                 </div>
 
-                {/* 2. STATS SUMMARY (Mini Dashboard) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 print:hidden">
+                {/* 2. STATS SUMMARY & ACTION (Updated Grid to 4 Cols) */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10 print:hidden">
                     {/* Stat 1 */}
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">📃</div>
@@ -209,6 +212,20 @@ export default function UserDashboard() {
                         <div>
                             <p className="text-slate-400 text-xs font-bold uppercase">Menunggu Verif</p>
                             <p className="text-2xl font-black text-slate-800">{menunggu}</p>
+                        </div>
+                    </div>
+
+                    {/* 👇 4. KARTU BARU: TOMBOL PENGADUAN (Action Card) */}
+                    <div
+                        onClick={() => router.push('/user/pengaduan')}
+                        className="cursor-pointer bg-linear-to-br from-orange-500 to-pink-500 p-5 rounded-2xl shadow-lg shadow-orange-200 border border-orange-400/20 flex items-center gap-4 text-white hover:scale-[1.02] transition-transform duration-200 group"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-2xl group-hover:rotate-12 transition">
+                            📢
+                        </div>
+                        <div>
+                            <p className="text-white/80 text-xs font-bold uppercase">Layanan</p>
+                            <p className="text-lg font-black">Buat Pengaduan</p>
                         </div>
                     </div>
                 </div>
@@ -262,9 +279,9 @@ export default function UserDashboard() {
                                         </div>
                                     </div>
 
-                                    {/* Bagian Kanan: Aksi (Background beda) */}
+                                    {/* Bagian Kanan: Aksi */}
                                     <div className={`p-6 md:w-72 flex flex-col justify-center border-t md:border-t-0 md:border-l border-slate-100 print:hidden
-                                        ${t.status_bayar === 'LUNAS' ? 'bg-green-50/50' :
+                                    ${t.status_bayar === 'LUNAS' ? 'bg-green-50/50' :
                                             t.status_bayar === 'MENUNGGU_VERIFIKASI' ? 'bg-yellow-50/50' : 'bg-slate-50'}
                                     `}>
 
@@ -335,7 +352,7 @@ export default function UserDashboard() {
 
                 {/* Footer Info */}
                 <div className="text-center mt-12 mb-8 text-slate-400 text-sm print:hidden">
-                    <p>&copy; {new Date().getFullYear()} PDAM Pintar System. Butuh bantuan? <a href="#" className="text-indigo-500 font-bold hover:underline">Hubungi CS</a></p>
+                    <p>&copy; {new Date().getFullYear()} PDAM Pintar System. Butuh bantuan? <button onClick={() => router.push('/user/pengaduan')} className="text-indigo-500 font-bold hover:underline">Hubungi CS</button></p>
                 </div>
 
             </main>

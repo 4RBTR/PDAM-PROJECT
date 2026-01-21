@@ -5,52 +5,65 @@ import Link from 'next/link'
 import toast from "react-hot-toast"
 
 export default function ContactPage() {
-    // State untuk menangampung inputan user
+    // State untuk menampung inputan user
     const [form, setForm] = useState({ nama: "", email: "", pesan: "" })
     const [loading, setLoading] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // State untuk Navbar Mobile
 
-    // Fungsi saat tombol "Kirim Pesan" ditekan (TIDAK DIUBAH LOGIKANYA)
+    // --- FUNGSI SUBMIT (DIPERBARUI) ---
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault() // Mencegah reload halaman
+        e.preventDefault() 
+        
+        // Validasi client-side sederhana
+        if (!form.nama || !form.email || !form.pesan) {
+            toast.error("Mohon lengkapi semua data");
+            return;
+        }
+
         setLoading(true)
 
         try {
-            const res = await fetch("http://localhost:8000/pengaduan", {
+            // PENTING: Mengarah ke endpoint khusus tamu '/contact'
+            const res = await fetch("http://localhost:8000/contact", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form)
+                headers: { 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify(form) // Mengirim { nama, email, pesan }
             })
+
             const data = await res.json()
+
             if (data.status) {
-                toast.success("Pesan berhasil dikirim! 🚀");
-                setForm({ nama: "", email: "", pesan: "" }) // Kosongkan form lagi
+                toast.success("Pesan berhasil dikirim! Tim kami akan menghubungi Anda. 🚀");
+                setForm({ nama: "", email: "", pesan: "" }) // Reset form
             } else {
-                toast.error("Gagal mengirim pesan. Coba lagi nanti.");
+                toast.error(data.message || "Gagal mengirim pesan.");
             }
         } catch (error) {
             console.error(error)
-            toast.error("Terjadi kesalahan. Silakan coba lagi.");
+            toast.error("Terjadi kesalahan sistem. Silakan coba lagi.");
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     return (
         <div className="min-h-screen bg-white text-slate-800 font-sans selection:bg-sky-100 selection:text-sky-700 overflow-x-hidden flex flex-col relative">
 
-            {/* --- BACKGROUND DECORATION (Konsisten) --- */}
+            {/* --- BACKGROUND DECORATION --- */}
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-size-[32px_32px]"></div>
                 <div className="absolute top-[-10%] right-[-10%] w-75 md:w-150 h-75 md:h-150 bg-sky-100/60 rounded-full blur-[80px] md:blur-[120px] opacity-70"></div>
                 <div className="absolute bottom-[-10%] left-[-10%] w-75 md:w-150 h-75 md:h-150 bg-indigo-50/60 rounded-full blur-[80px] md:blur-[120px] opacity-70"></div>
             </div>
 
-            {/* --- NAVBAR (Konsisten) --- */}
+            {/* --- NAVBAR --- */}
             <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200/60">
                 <div className="container mx-auto px-4 md:px-6 h-16 md:h-20 flex justify-between items-center">
                     <Link href="/" className="flex items-center gap-2.5 z-50">
-                        <div className="w-9 h-9 md:w-10 md:h-10 bg-linear-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-200 text-white font-bold text-lg">P</div>
-                        <span className="font-bold text-lg md:text-xl tracking-tight text-slate-800">PDAM <span className="text-sky-600">Pintar</span></span>
+                        <div className="w-9 h-9 md:w-10 md:h-10  from-sky-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-200 text-white font-bold text-lg">P</div>
+                        <span className="font-bold text-lg md:text-xl tbg-gradient-to-brracking-tight text-slate-800">PDAM <span className="text-sky-600">Pintar</span></span>
                     </Link>
 
                     {/* Desktop Menu */}
@@ -104,8 +117,8 @@ export default function ContactPage() {
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-100 text-sky-600 text-xs font-bold uppercase tracking-wider mb-4">
                                 Bantuan 24/7
                             </div>
-                            <h1 className="text-4xl md:text-5xl font-black mb-6 text-slate-900 leading-tight">
-                                Hubungi <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-500 to-blue-700">Kami</span>
+                            <h1 className="text-4xl md:text-5xl font-black mb-6 text-slate-90bg-gradient-to-r0 leading-tight">
+                                Hubungi <span className="text-transparent bg-clip-text  from-sky-500 to-blue-700">Kami</span>
                             </h1>
                             <p className="text-slate-500 text-lg leading-relaxed">
                                 Punya pertanyaan seputar tagihan, ingin melaporkan kebocoran, atau butuh bantuan teknis? Tim kami siap membantu Anda.
@@ -141,7 +154,7 @@ export default function ContactPage() {
                         </div>
                     </div>
 
-                    {/* Kolom Kanan: Form Kontak (LOGIKA TETAP SAMA) */}
+                    {/* Kolom Kanan: Form Kontak */}
                     <div className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-bl-full z-0 pointer-events-none"></div>
 
@@ -184,14 +197,14 @@ export default function ContactPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`w-full font-bold py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2
-                    ${loading
-                                        ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                                        : "bg-linear-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white shadow-sky-200 hover:shadow-sky-300 hover:-translate-y-1"}
-                `}
+                                className={`w-full font-bold py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 
+                                ${loading 
+                                    ? "bg-slate-300 text-slate-500 cursor-not-allowed" 
+                                    : "bg-linear-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white shadow-sky-200 hover:shadow-sky-300 hover:-translate-y-1"}
+                                `}
                             >
                                 {loading ? (
-                                    <>Wait...</>
+                                    <>Mengirim...</>
                                 ) : (
                                     <>Kirim Pesan 🚀</>
                                 )}
@@ -201,7 +214,7 @@ export default function ContactPage() {
                 </div>
             </main>
 
-            {/* --- FOOTER (Konsisten) --- */}
+            {/* --- FOOTER --- */}
             <footer className="bg-slate-900 pt-16 pb-8 text-slate-400 border-t border-slate-800 relative z-20 mt-auto">
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">

@@ -12,9 +12,9 @@ const prisma = new PrismaClient();
 const SECRET = "pdam_super_secret_123";
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Penting untuk membaca JSON body
 
-// Buka akses folder 'uploads' agar gambar bisa dilihat
+// Buka akses folder 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- SETUP UPLOAD GAMBAR (MULTER) ---
@@ -178,19 +178,14 @@ app.put('/tagihan/verifikasi/:id', async (req, res) => {
 // 3. KHUSUS MANAGER (DASHBOARD STATISTIK)
 // ==========================================
 
-// Endpoint Dashboard (UPDATED: Ada Unread Count)
 app.get('/manager/dashboard', async (req, res) => {
     try {
-        // 1. Ambil Tagihan untuk hitung statistik keuangan
         const tagihan = await prisma.tagihan.findMany({
             include: { user: true },
             orderBy: { id: 'desc' }
         });
 
-        // 2. Hitung jumlah pelanggan
         const totalPelanggan = await prisma.user.count({ where: { role: 'PELANGGAN' } });
-
-        // 3. Hitung Pesan Belum Dibaca (FITUR BARU)
         const unreadCount = await prisma.pengaduan.count({
             where: { isRead: false }
         });
@@ -201,7 +196,6 @@ app.get('/manager/dashboard', async (req, res) => {
         let totalAir = 0;
 
         tagihan.forEach(t => {
-            // Hitung Debit Air (Meter Akhir - Meter Awal)
             const debit = t.meter_akhir - t.meter_awal;
             totalAir += debit;
 
@@ -221,7 +215,7 @@ app.get('/manager/dashboard', async (req, res) => {
                 transaksi_lunas: sudahLunas,
                 transaksi_tunggakan: belumBayar,
                 total_air: totalAir,
-                unread_pengaduan: unreadCount // <--- Dikirim ke frontend untuk notifikasi merah
+                unread_pengaduan: unreadCount
             },
             data: tagihan
         });
@@ -232,33 +226,114 @@ app.get('/manager/dashboard', async (req, res) => {
 
 
 // ==========================================
-// 4. FITUR PENGADUAN (CONTACT FORM)
+// 4. FITUR PENGADUAN (Fixed: Soft Delete & Guest)
 // ==========================================
 
-// PUBLIC: Orang kirim pesan (Create)
-app.post('/pengaduan', async (req, res) => {
+// --- FIX: ROUTE KHUSUS KONTAK TAMU (Tanpa Gambar/Multer) ---
+// Ini untuk mengatasi bug "Unexpected token <" di halaman Contact
+app.post('/contact', async (req, res) => {
     try {
-        const { nama, email, pesan } = req.body;
-        // isRead otomatis false (default di database)
-        const newPengaduan = await prisma.pengaduan.create({
-            data: { nama, email, pesan }
+        const { nama, email, pesan } = req.body; // Menerima JSON
+
+        if (!nama || !email || !pesan) {
+            return res.status(400).json({ status: false, message: "Data tidak lengkap" });
+        }
+
+        const data = await prisma.pengaduan.create({
+            data: {
+                userId: null,           // Tamu tidak punya User ID
+                nama: nama,             // Simpan nama tamu
+                email: email,           // Simpan email tamu
+
+                // --- BAGIAN INI YANG MEMPERBAIKI ERROR ANDA ---
+                judul: `Pesan Tamu: ${nama}`,  // Auto-generate Judul
+                deskripsi: pesan,              // Petakan 'pesan' ke 'deskripsi'
+
+                status: "PENDING",
+                isRead: false,
+                isDeletedByUser: false
+            }
         });
-        res.json({ status: true, message: "Pesan terkirim!", data: newPengaduan });
+
+        res.json({ status: true, message: "Pesan tamu berhasil disimpan", data });
     } catch (error) {
-        res.status(500).json({ status: false, message: "Gagal kirim pesan" });
+        console.error("Error Contact:", error);
+        res.status(500).json({ status: false, message: "Internal Server Error" });
     }
 });
 
-// MANAGER ONLY: Baca pesan & Tandai sudah dibaca (Read & Update)
-app.get('/manager/pengaduan', async (req, res) => {
+// USER/PELANGGAN: Kirim Pengaduan (Dengan Gambar)
+app.post('/pengaduan', upload.single('image'), async (req, res) => {
     try {
-        // 1. Ambil semua pesan
-        const list = await prisma.pengaduan.findMany({
-            orderBy: { createdAt: 'desc' } // Pesan terbaru di atas
+        const { user_id, nama, email, judul, deskripsi } = req.body;
+
+        const fotoName = req.file ? req.file.filename : null;
+        const userIdInt = (user_id && user_id !== 'undefined' && user_id !== 'null') ? parseInt(user_id) : null;
+
+        const data = await prisma.pengaduan.create({
+            data: {
+                userId: userIdInt,
+                nama: userIdInt ? undefined : nama,
+                email: userIdInt ? undefined : email,
+                judul: judul,
+                deskripsi: deskripsi,
+                foto: fotoName,
+                status: "PENDING"
+            }
         });
 
-        // 2. UPDATE STATUS: Tandai semua pesan 'unread' menjadi 'read'
-        // Karena manager sedang membuka halaman inbox ini
+        res.json({ status: true, message: "Pengaduan terkirim!", data });
+    } catch (error) {
+        console.log("Error Pengaduan:", error);
+        res.status(500).json({ status: false, message: "Gagal kirim pengaduan" });
+    }
+});
+
+// PELANGGAN: Lihat Riwayat Pengaduan Saya
+// --- FIX: Filter Soft Delete ---
+app.get('/pengaduan/user/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const list = await prisma.pengaduan.findMany({
+            where: {
+                userId: parseInt(id),
+                isDeletedByUser: false // HANYA TAMPILKAN YANG BELUM DIHAPUS USER
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json({ status: true, data: list });
+    } catch (error) {
+        res.status(500).json({ status: false, message: "Gagal ambil data" });
+    }
+});
+
+// PELANGGAN: Hapus Pengaduan Saya (SOFT DELETE)
+// --- FIX: Gunakan Update, bukan Delete ---
+app.delete('/pengaduan/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Ubah status isDeletedByUser menjadi TRUE (Soft Delete)
+        await prisma.pengaduan.update({
+            where: { id: parseInt(id) },
+            data: { isDeletedByUser: true }
+        });
+
+        res.json({ status: true, message: "Laporan berhasil dihapus dari riwayat" });
+    } catch (error) {
+        res.status(500).json({ status: false, message: "Gagal menghapus laporan" });
+    }
+});
+
+// MANAGER: Lihat Semua Pengaduan Masuk
+app.get('/manager/pengaduan', async (req, res) => {
+    try {
+        // Manager melihat SEMUA pesan (termasuk yang isDeletedByUser: true)
+        const list = await prisma.pengaduan.findMany({
+            include: { user: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
         await prisma.pengaduan.updateMany({
             where: { isRead: false },
             data: { isRead: true }
@@ -270,25 +345,48 @@ app.get('/manager/pengaduan', async (req, res) => {
     }
 });
 
-// MANAGER ONLY: Hapus Pesan
+// MANAGER: Balas & Update Status
+app.put('/manager/pengaduan/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, tanggapan } = req.body;
+
+        await prisma.pengaduan.update({
+            where: { id: parseInt(id) },
+            data: {
+                status: status,
+                tanggapan: tanggapan
+            }
+        });
+
+        res.json({ status: true, message: "Status & Tanggapan diperbarui" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: false, message: "Gagal update" });
+    }
+});
+
+// MANAGER: Hapus Pengaduan (HARD DELETE)
+// Manager boleh menghapus permanen
 app.delete('/manager/pengaduan/:id', async (req, res) => {
     try {
         const { id } = req.params;
         await prisma.pengaduan.delete({
             where: { id: parseInt(id) }
         });
-        res.json({ status: true, message: "Pesan berhasil dihapus" });
+        res.json({ status: true, message: "Pesan berhasil dihapus permanen" });
     } catch (error) {
         res.status(500).json({ status: false, message: "Gagal menghapus pesan" });
     }
 });
 
-// GANTI BAGIAN PALING BAWAH INDEX.JS DENGAN INI:
 
-// Export app untuk Vercel (Wajib serverless)
+// ==========================================
+// EXPORT SERVER
+// ==========================================
+
 module.exports = app;
 
-// Hanya jalankan app.listen kalau BUKAN di Vercel (untuk tes lokal di laptop)
 if (!process.env.VERCEL) {
     const PORT = process.env.PORT || 8000;
     app.listen(PORT, '0.0.0.0', () => {

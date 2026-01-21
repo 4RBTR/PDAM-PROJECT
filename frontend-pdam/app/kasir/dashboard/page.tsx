@@ -9,7 +9,7 @@ import toast, { Toaster } from "react-hot-toast"
 import { getAuthToken, getUserRole } from "@/utils/cookies"
 
 export default function KasirDashboard() {
-    // --- STATE & LOGIC (TIDAK DIUBAH - AMAN) ---
+    // --- STATE ---
     const [form, setForm] = useState({
         userId: "",
         bulan: "Januari",
@@ -21,9 +21,16 @@ export default function KasirDashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [pelanggan, setPelanggan] = useState<any[]>([])
     const [kasirName, setKasirName] = useState("")
+
+    // State untuk Modal Data Pelanggan
+    const [showModalPelanggan, setShowModalPelanggan] = useState(false)
+
     const router = useRouter()
 
     useEffect(() => {
+        // PERBAIKAN 1: Bersihkan semua toast/notifikasi sisa dari halaman login
+        toast.dismiss()
+
         const token = getAuthToken()
         const role = getUserRole()
         const name = localStorage.getItem("name")
@@ -49,6 +56,7 @@ export default function KasirDashboard() {
         const fetchPelanggan = async () => {
             try {
                 const currentToken = getAuthToken();
+                // Pastikan URL backend benar (localhost:8000 atau sesuai settingan)
                 const res = await fetch('http://localhost:8000/users/pelanggan', {
                     headers: { "Authorization": `Bearer ${currentToken}` }
                 })
@@ -56,6 +64,7 @@ export default function KasirDashboard() {
                 if (data.status) setPelanggan(data.data)
             } catch (error) {
                 console.error("Gagal ambil data pelanggan", error)
+                toast.error("Gagal memuat data pelanggan")
             }
         }
         fetchPelanggan()
@@ -66,6 +75,11 @@ export default function KasirDashboard() {
 
         if (form.meter_akhir < form.meter_awal) {
             toast.error("Meter akhir tidak boleh lebih kecil dari awal!")
+            return
+        }
+
+        if (!form.userId) {
+            toast.error("Pilih pelanggan terlebih dahulu!")
             return
         }
 
@@ -87,6 +101,7 @@ export default function KasirDashboard() {
 
             if (data.status) {
                 toast.success("Tagihan Berhasil Dibuat!")
+                // Reset form meteran saja, pelanggan tetap terpilih agar cepat input lagi
                 setForm({ ...form, meter_awal: 0, meter_akhir: 0 })
             } else {
                 toast.error("Gagal: " + data.message)
@@ -104,8 +119,11 @@ export default function KasirDashboard() {
         router.push('/')
     }
 
-    // --- HELPER UI ---
-    const totalPemakaian = Math.max(0, form.meter_akhir - form.meter_awal)
+    // --- PERBAIKAN 2: HELPER UI (Handling NaN) ---
+    // Menggunakan || 0 agar jika input kosong/NaN, kalkulasi dianggap 0, bukan error/blank
+    const meterAkhirSafe = Number(form.meter_akhir) || 0
+    const meterAwalSafe = Number(form.meter_awal) || 0
+    const totalPemakaian = Math.max(0, meterAkhirSafe - meterAwalSafe)
     const estimasiBiaya = totalPemakaian * 5000
 
     return (
@@ -175,7 +193,26 @@ export default function KasirDashboard() {
                             </div>
                         </div>
 
-                        {/* Secondary Menu Button */}
+                        {/* BUTTON VIEW DATA PELANGGAN (FITUR BARU) */}
+                        <button
+                            onClick={() => setShowModalPelanggan(true)}
+                            className="w-full bg-white/80 hover:bg-white backdrop-blur-sm rounded-3xl p-5 shadow-sm hover:shadow-xl border border-transparent hover:border-blue-100 transition-all duration-300 group text-left flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">Data Pelanggan</h3>
+                                    <p className="text-xs text-slate-400">Lihat semua data user</p>
+                                </div>
+                            </div>
+                            <div className="text-slate-300 group-hover:text-blue-500 transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                            </div>
+                        </button>
+
+                        {/* Verifikasi Button */}
                         <button
                             onClick={() => router.push('/kasir/verifikasi')}
                             className="w-full bg-white/80 hover:bg-white backdrop-blur-sm rounded-3xl p-5 shadow-sm hover:shadow-xl border border-transparent hover:border-blue-100 transition-all duration-300 group text-left flex items-center justify-between"
@@ -297,7 +334,8 @@ export default function KasirDashboard() {
                                                     type="number"
                                                     className="w-full py-4 px-5 bg-slate-50 border-2 border-slate-100 rounded-xl text-3xl font-mono font-bold text-slate-400 focus:text-slate-600 focus:bg-white focus:border-slate-300 focus:ring-0 outline-none transition-all placeholder-slate-200"
                                                     value={form.meter_awal}
-                                                    onChange={(e) => setForm({ ...form, meter_awal: parseInt(e.target.value) })}
+                                                    // PERBAIKAN: Gunakan || 0 untuk mencegah NaN
+                                                    onChange={(e) => setForm({ ...form, meter_awal: Number(e.target.value) || 0 })}
                                                     placeholder="000"
                                                 />
                                                 <div className="absolute right-0 top-0 h-full w-12 bg-linear-to-l from-slate-50 to-transparent pointer-events-none"></div>
@@ -314,7 +352,8 @@ export default function KasirDashboard() {
                                                         type="number"
                                                         className="w-full py-4 px-5 bg-white border-2 border-blue-500 rounded-xl text-3xl font-mono font-black text-slate-800 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
                                                         value={form.meter_akhir}
-                                                        onChange={(e) => setForm({ ...form, meter_akhir: parseInt(e.target.value) })}
+                                                        // PERBAIKAN: Gunakan || 0 untuk mencegah NaN
+                                                        onChange={(e) => setForm({ ...form, meter_akhir: Number(e.target.value) || 0 })}
                                                         placeholder="000"
                                                         required
                                                     />
@@ -347,7 +386,8 @@ export default function KasirDashboard() {
                                                 <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Estimasi Tagihan</p>
                                                 <p className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">
                                                     <span className="text-lg font-normal text-emerald-600 mr-1">Rp</span>
-                                                    {estimasiBiaya.toLocaleString('id-ID')}
+                                                    {/* PERBAIKAN: Menangani NaN jika estimasiBiaya error */}
+                                                    {(estimasiBiaya || 0).toLocaleString('id-ID')}
                                                 </p>
                                             </div>
                                         </div>
@@ -374,6 +414,85 @@ export default function KasirDashboard() {
 
                 </div>
             </main>
+
+            {/* --- MODAL / POPUP DATA PELANGGAN (FITUR BARU) --- */}
+            {showModalPelanggan && (
+                <div className="fixed inset-0 z-999 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => setShowModalPelanggan(false)}
+                    ></div>
+
+                    {/* Modal Content */}
+                    <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Data Seluruh Pelanggan</h3>
+                                <p className="text-sm text-slate-500">Daftar pelanggan terdaftar di sistem.</p>
+                            </div>
+                            <button
+                                onClick={() => setShowModalPelanggan(false)}
+                                className="p-2 bg-white rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors shadow-sm border border-slate-200"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto p-6">
+                            {pelanggan.length === 0 ? (
+                                <div className="text-center py-10 text-slate-400">Belum ada data pelanggan.</div>
+                            ) : (
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+                                        <tr>
+                                            <th className="px-6 py-3">ID</th>
+                                            <th className="px-6 py-3">NAMA LENGKAP</th>
+                                            <th className="px-6 py-3">EMAIL</th>
+                                            <th className="px-6 py-3">ALAMAT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {pelanggan.map((customer, index) => (
+                                            <tr key={customer.id} className="border-b bg-white hover:bg-gray-50">
+                                                {/* Kolom ID */}
+                                                <td className="px-6 py-4">
+                                                    #{customer.id || index + 1}
+                                                </td>
+
+                                                {/* Kolom Nama */}
+                                                <td className="px-6 py-4 font-medium text-gray-900">
+                                                    {customer.name}
+                                                </td>
+
+                                                {/* Kolom Email */}
+                                                <td className="px-6 py-4">
+                                                    {customer.email}
+                                                </td>
+
+                                                {/* Kolom Alamat (Pastikan field ini ada di database) */}
+                                                <td className="px-6 py-4">
+                                                    {/* Jika alamat kosong, tampilkan tanda strip atau pesan */}
+                                                    {customer.address ? customer.address : "-"}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
+                            <button
+                                onClick={() => setShowModalPelanggan(false)}
+                                className="text-sm text-slate-500 hover:text-blue-600 font-medium"
+                            >
+                                Tutup Jendela
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

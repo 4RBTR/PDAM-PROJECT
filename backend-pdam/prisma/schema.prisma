@@ -5,33 +5,34 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"      // Sudah diganti jadi mysql
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  email     String    @unique
+  email     String   @unique
   password  String
   address   String
-  role      Role      @default(PELANGGAN)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  role      Role     @default(PELANGGAN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
   tagihan   Tagihan[] 
+  pengaduan Pengaduan[] 
 }
 
 model Tagihan {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id]) 
-  bulan       String
-  tahun       Int
-  meter_awal  Int
-  meter_akhir Int
-  total_bayar Int
-  status_bayar String    @default("BELUM_BAYAR") 
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id]) 
+  bulan        String
+  tahun        Int
+  meter_awal   Int
+  meter_akhir  Int
+  total_bayar  Int
+  status_bayar String   @default("BELUM_BAYAR") 
   bukti_bayar  String?  
   createdAt    DateTime @default(now())
 }
@@ -42,11 +43,31 @@ enum Role {
   MANAGER
 }
 
+// MODEL PENGADUAN (UPDATED)
 model Pengaduan {
-  id        Int      @id @default(autoincrement())
-  nama      String
-  email     String
-  pesan     String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  
+  // Relasi ke User (Opsional)
+  userId      Int?      
+  user        User?    @relation(fields: [userId], references: [id])
+
+  // Identitas Pengirim (Tamu)
+  nama        String?  
+  email       String?  
+
+  // Data Laporan
+  judul       String   
+  deskripsi   String   @db.Text 
+  foto        String?  
+  
+  // Status & Respon
+  status      String   @default("PENDING") 
+  isRead      Boolean  @default(false)        
+  tanggapan   String?  @db.Text 
+
+  // --- FIX: SOFT DELETE ---
+  // Agar user bisa hapus dari tampilan mereka, tapi manager tetap bisa lihat
+  isDeletedByUser Boolean @default(false)
+
+  createdAt   DateTime @default(now())
 }

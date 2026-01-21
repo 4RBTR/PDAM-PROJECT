@@ -190,9 +190,9 @@ export default function ManagerDashboard() {
                         <p className="text-slate-500 text-sm">Update data real-time hari ini.</p>
                     </div>
                     <div className="flex gap-3">
-                        <Link href="/manager/pengaduan" className="relative group bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
+                        <Link href="/manager/pengaduan" className="relative group bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-300 transition flex items-center gap-2 shadow-sm">
                             <Mail size={16} />
-                            <span>Pengaduan</span>
+                            <span>Massage</span>
                             {stats && stats.unread_pengaduan > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">
                                     {stats.unread_pengaduan}

@@ -126,7 +126,7 @@ export default function ManagerDashboard() {
         removeAuthToken()
         localStorage.removeItem("name")
         toast.success("Logout Berhasil")
-        router.push('/login')
+        router.push('/')
     }
 
     // --- Logic Filter & Search ---

@@ -129,7 +129,7 @@ export default function UserDashboard() {
     const handleLogout = () => {
         removeAuthToken()
         toast.success("Berhasil keluar")
-        router.push("/login")
+        router.push("/")
     }
 
     // Hitung Statistik Sederhana

@@ -16,7 +16,10 @@ import {
     Wallet,
     Filter,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    // 👇 Tambahkan icon untuk navigasi halaman
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react"
 import {
     XAxis,
@@ -28,16 +31,11 @@ import {
     Area
 } from 'recharts'
 
-
-
 // 👇 Import Helper
 import { getAuthToken, getUserRole, removeAuthToken } from "@/utils/cookies"
 
-// --- KONFIGURASI API (Ganti IP di sini agar sesuai) ---
 const API_URL = process.env.NEXT_PUBLIC_API_URL
-// Jika testing via HP/Jaringan lain, ganti localhost dengan IP Laptop, misal: "http://192.168.1.5:8000"
 
-// --- Tipe Data ---
 interface IStats {
     total_pendapatan: number;
     total_pelanggan: number;
@@ -58,7 +56,6 @@ interface ITagihan {
     meter_akhir: number;
 }
 
-// --- Komponen Skeleton Loading ---
 const DashboardSkeleton = () => (
     <div className="p-6 space-y-6 animate-pulse max-w-7xl mx-auto">
         <div className="h-10 bg-slate-200 w-1/3 rounded-lg"></div>
@@ -81,6 +78,10 @@ export default function ManagerDashboard() {
     // State untuk Filter & Search
     const [searchTerm, setSearchTerm] = useState("")
     const [filterStatus, setFilterStatus] = useState("ALL")
+
+    // 👇 State BARU untuk Pagination
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 5
 
     const router = useRouter()
 
@@ -108,7 +109,6 @@ export default function ManagerDashboard() {
     const fetchData = async () => {
         try {
             const token = getAuthToken()
-            // 👇 MENGGUNAKAN API_URL AGAR DINAMIS
             const res = await fetch(`${API_URL}/manager/dashboard`, {
                 headers: { "Authorization": `Bearer ${token}` }
             })
@@ -147,13 +147,25 @@ export default function ManagerDashboard() {
         })
     }, [transaksi, searchTerm, filterStatus])
 
-    // --- Mock Data Chart (Kombinasi data real & dummy untuk visualisasi) ---
+    // 👇 LOGIC PAGINATION (Tambahkan ini)
+    // 1. Reset ke halaman 1 jika user melakukan search atau filter
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm, filterStatus])
+
+    // 2. Hitung index data yang akan ditampilkan
+    const indexOfLastItem = currentPage * itemsPerPage
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage
+    const currentItems = filteredTransaksi.slice(indexOfFirstItem, indexOfLastItem)
+    const totalPages = Math.ceil(filteredTransaksi.length / itemsPerPage)
+
+    // --- Mock Data Chart ---
     const chartData = [
         { name: 'Sep', total: 4000000 },
         { name: 'Okt', total: 3500000 },
         { name: 'Nov', total: 5000000 },
         { name: 'Des', total: 4800000 },
-        { name: 'Jan', total: stats?.total_pendapatan || 0 }, // Data Real Bulan Ini
+        { name: 'Jan', total: stats?.total_pendapatan || 0 },
     ];
 
     const formatRp = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -163,7 +175,7 @@ export default function ManagerDashboard() {
     return (
         <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800 pb-12">
 
-            {/* --- TOPBAR --- */}
+            {/* --- TOPBAR (TIDAK BERUBAH) --- */}
             <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 shadow-sm print:hidden">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -213,9 +225,8 @@ export default function ManagerDashboard() {
                     </div>
                 </div>
 
-                {/* --- 1. STATISTIC CARDS (KPI) --- */}
+                {/* --- 1. STATISTIC CARDS (TIDAK BERUBAH) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-
                     {/* Card: Pendapatan */}
                     <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100 relative overflow-hidden group">
                         <div className="flex justify-between items-start mb-4">
@@ -281,7 +292,7 @@ export default function ManagerDashboard() {
                     </div>
                 </div>
 
-                {/* --- 2. CHART SECTION (VISUALISASI) --- */}
+                {/* --- 2. CHART SECTION (TIDAK BERUBAH) --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:break-inside-avoid">
                     {/* Grafik Pendapatan */}
                     <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
@@ -343,7 +354,7 @@ export default function ManagerDashboard() {
                     </div>
                 </div>
 
-                {/* --- 3. TABLE SECTION (INTERAKTIF) --- */}
+                {/* --- 3. TABLE SECTION (DENGAN PAGINATION) --- */}
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none">
 
                     {/* Toolbar Table */}
@@ -351,7 +362,6 @@ export default function ManagerDashboard() {
                         <h3 className="font-bold text-lg text-slate-800">Riwayat Transaksi</h3>
 
                         <div className="flex flex-col sm:flex-row gap-3">
-                            {/* Search */}
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                 <input
@@ -363,7 +373,6 @@ export default function ManagerDashboard() {
                                 />
                             </div>
 
-                            {/* Filter Dropdown */}
                             <div className="relative">
                                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                 <select
@@ -380,7 +389,7 @@ export default function ManagerDashboard() {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto min-h-100">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
@@ -392,7 +401,8 @@ export default function ManagerDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredTransaksi.length === 0 ? (
+                                {/* 👇 Menggunakan currentItems (Data yang sudah dipotong) bukan filteredTransaksi */}
+                                {currentItems.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                                             <div className="flex flex-col items-center justify-center">
@@ -402,7 +412,7 @@ export default function ManagerDashboard() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredTransaksi.map((item) => (
+                                    currentItems.map((item) => (
                                         <tr key={item.id} className="hover:bg-indigo-50/30 transition duration-150 group cursor-pointer">
                                             <td className="px-6 py-4">
                                                 <span className="font-mono text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition">#{item.id}</span>
@@ -450,6 +460,61 @@ export default function ManagerDashboard() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* 👇 FOOTER PAGINATION CONTROL */}
+                    {filteredTransaksi.length > 0 && (
+                        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <p className="text-xs text-slate-500">
+                                Menampilkan <span className="font-bold text-slate-700">{indexOfFirstItem + 1}</span> - <span className="font-bold text-slate-700">{Math.min(indexOfLastItem, filteredTransaksi.length)}</span> dari <span className="font-bold text-slate-700">{filteredTransaksi.length}</span> data
+                            </p>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all text-slate-600"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                
+                                {/* Indikator Halaman */}
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                        // Simple logic: show first 5 pages for simplicity in small datasets
+                                        // for larger datasets you'd want complex logic (1, 2 ... 10)
+                                        let p = i + 1;
+                                        // Logic agar tombol geser jika halaman banyak (opsional, tapi bagus)
+                                        if (totalPages > 5 && currentPage > 3) {
+                                            p = currentPage - 3 + i + 1;
+                                            if (p > totalPages) return null;
+                                        }
+                                        
+                                        return (
+                                            <button
+                                                key={p}
+                                                onClick={() => setCurrentPage(p)}
+                                                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                                                    currentPage === p 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                                                    : 'text-slate-500 hover:bg-white hover:border border-slate-200'
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all text-slate-600"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
             </main>

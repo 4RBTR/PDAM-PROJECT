@@ -1,0 +1,72 @@
+// Lokasi: frontend-pdam/prisma/schema.prisma
+// Prisma v7: datasource URLs dipindahkan ke prisma.config.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  address   String
+  role      Role     @default(PELANGGAN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tagihan   Tagihan[]
+  pengaduan Pengaduan[]
+}
+
+model Tagihan {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bulan        String
+  tahun        Int
+  meter_awal   Int
+  meter_akhir  Int
+  total_bayar  Int
+  status_bayar String   @default("BELUM_BAYAR")
+  bukti_bayar  String?
+  createdAt    DateTime @default(now())
+}
+
+enum Role {
+  PELANGGAN
+  KASIR
+  MANAGER
+}
+
+model Pengaduan {
+  id              Int      @id @default(autoincrement())
+
+  // Relasi ke User (nullable untuk tamu)
+  userId          Int?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Identitas Pengirim Tamu
+  nama            String?
+  email           String?
+
+  // Data Laporan
+  judul           String
+  deskripsi       String
+  foto            String?
+
+  // Status & Respon
+  status          String   @default("PENDING")
+  isRead          Boolean  @default(false)
+  tanggapan       String?
+
+  // Soft Delete (hanya dari sisi user)
+  isDeletedByUser Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+}

@@ -1,11 +1,11 @@
 // lib/supabase.ts - Supabase client untuk Storage (server-side only)
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
-
-// Service role client - untuk upload file dari server (bypass RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+export const getSupabaseAdmin = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string || "https://placeholder.supabase.co";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string || "placeholder_key";
+    return createClient(supabaseUrl, supabaseServiceKey);
+};
 
 export const BUCKET_NAME = "Pdam";
 
@@ -17,7 +17,9 @@ export async function uploadToStorage(
 ): Promise<string> {
   const filePath = `${folder}/${fileName}`;
 
-  const { error } = await supabaseAdmin.storage
+  const admin = getSupabaseAdmin();
+  
+  const { error } = await admin.storage
     .from(BUCKET_NAME)
     .upload(filePath, file, {
       cacheControl: "3600",
@@ -28,7 +30,7 @@ export async function uploadToStorage(
     throw new Error(`Upload gagal: ${error.message}`);
   }
 
-  const { data: urlData } = supabaseAdmin.storage
+  const { data: urlData } = admin.storage
     .from(BUCKET_NAME)
     .getPublicUrl(filePath);
 

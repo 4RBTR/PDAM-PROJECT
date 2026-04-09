@@ -141,7 +141,7 @@ export default function KasirDashboard() {
                 <div className="p-6 lg:p-10 max-w-5xl mx-auto w-full space-y-8">
                     
                     {/* Banner Informasi Singkat */}
-                    <div className="bg-linear-to-r from-blue-600 to-indigo-700 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-200 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+                    <div className="bg-linear-to-r from-blue-600 to-indigo-700 rounded-4xl p-8 text-white shadow-xl shadow-blue-200 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
                         <div className="relative z-10">
                             <h2 className="text-2xl font-black mb-2">Pencatatan Meteran Digital</h2>
                             <p className="text-blue-100 text-sm max-w-md leading-relaxed">Pastikan angka meteran yang diinput sesuai dengan foto atau bukti fisik dari lapangan untuk menghindari komplain pelanggan.</p>
@@ -236,7 +236,7 @@ export default function KasirDashboard() {
                         {/* Ringkasan & Pintasan (Kanan) */}
                         <div className="lg:col-span-4 space-y-6">
                             {/* Kartu Kalkulasi Realtime */}
-                            <div className="bg-slate-900 dark:bg-black rounded-[2rem] p-1 shadow-2xl dark:shadow-none transition-colors">
+                            <div className="bg-slate-900 dark:bg-black rounded-4xl p-1 shadow-2xl dark:shadow-none transition-colors">
                                 <div className="bg-slate-800 dark:bg-slate-900 border border-white/5 dark:border-white/10 rounded-[1.8rem] p-6 space-y-6">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Total Penggunaan</p>
@@ -254,7 +254,7 @@ export default function KasirDashboard() {
                             </div>
 
                             {/* Pintasan Menu Lain */}
-                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-4">
+                            <div className="bg-white dark:bg-slate-900 rounded-4xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-4">
                                 <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">Aksi Cepat</p>
                                 <button onClick={() => router.push('/kasir/pelanggan')} className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-2xl transition-all group">
                                     <div className="flex items-center gap-3">

@@ -213,7 +213,7 @@ export default function KelolaPelangganPage() {
                     </div>
 
                     {/* TABLE */}
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-colors">
+                    <div className="bg-white dark:bg-slate-900 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-colors">
                         {loading ? (
                             <div className="p-20 text-center text-slate-400 dark:text-slate-500 font-medium">Memuat data...</div>
                         ) : filteredPelanggan.length === 0 ? (
@@ -236,7 +236,7 @@ export default function KelolaPelangganPage() {
                                             <tr key={p.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors group">
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm">
+                                                        <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm">
                                                             {p.name.charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
@@ -273,8 +273,8 @@ export default function KelolaPelangganPage() {
 
             {/* MODAL FORM */}
             {showForm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center transition-colors">
                             <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">
                                 {editId ? 'Edit Pelanggan' : 'Daftar Pelanggan Baru'}
@@ -306,7 +306,7 @@ export default function KelolaPelangganPage() {
 
                             <div className="pt-4 flex gap-3">
                                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Batal</button>
-                                <button type="submit" className="flex-[2] py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-200 transition-all active:scale-95">
+                                <button type="submit" className="flex-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-200 transition-all active:scale-95">
                                     {editId ? 'Simpan Perubahan' : 'Simpan Data'}
                                 </button>
                             </div>

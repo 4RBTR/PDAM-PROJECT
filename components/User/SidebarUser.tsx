@@ -7,8 +7,11 @@ import {
     MessageSquare,
     LogOut,
     X,
-    Droplets
+    Droplets,
+    Users,
+    Smartphone
 } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
 
 interface SidebarProps {
     isOpen: boolean;          // Status: buka/tutup
@@ -18,11 +21,13 @@ interface SidebarProps {
 
 export default function SidebarUser({ isOpen, onClose, onLogout }: SidebarProps) {
     const pathname = usePathname()
+    const { user } = useAuth()
 
     const menus = [
         { label: "Dashboard", href: "/user/dashboard", icon: <LayoutDashboard size={20} /> },
+        { label: "Layanan Baru", href: "/user/layanan", icon: <Droplets size={20} /> },
         { label: "Pengaduan", href: "/user/pengaduan", icon: <MessageSquare size={20} /> },
-        // Tambah menu lain di sini jika perlu
+        { label: "Profil Saya", href: "/user/profile", icon: <Users size={20} /> },
     ]
 
     return (
@@ -54,7 +59,7 @@ export default function SidebarUser({ isOpen, onClose, onLogout }: SidebarProps)
                             <Droplets size={22} className="text-blue-400 relative z-10" strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="font-black text-slate-800 dark:text-slate-100 text-lg leading-none tracking-tight">PDAM Pintar</h1>
+                            <h1 className="font-black text-slate-800 dark:text-slate-100 text-lg leading-none tracking-tight">Hydro-FlowSystems</h1>
                             <span className="text-[10px] text-blue-600 dark:text-blue-400 font-black tracking-widest uppercase mt-0.5 block">Pelanggan</span>
                         </div>
                     </div>
@@ -100,8 +105,27 @@ export default function SidebarUser({ isOpen, onClose, onLogout }: SidebarProps)
                     })}
                 </div>
 
-                {/* FOOTER: Logout */}
-                <div className="p-5 border-t border-slate-100/60 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900 rounded-b-4xl lg:rounded-none">
+                {/* FOOTER: User Profile & Logout */}
+                <div className="p-5 border-t border-slate-100/60 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900 rounded-b-4xl lg:rounded-none space-y-4">
+                    {/* User Profile Info */}
+                    <Link 
+                        href="/user/profile"
+                        onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700/50 group"
+                    >
+                        <div className="w-10 h-10 bg-linear-to-tr from-blue-600 to-blue-400 rounded-xl flex items-center justify-center text-white font-black overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform group-hover:scale-105">
+                            {user?.profile_picture ? (
+                                <img src={user.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                (user?.name || "U").charAt(0).toUpperCase()
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase leading-tight">{user?.name || "Memuat..."}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Lihat Profil</p>
+                        </div>
+                    </Link>
+
                     <button
                         onClick={() => { onClose(); onLogout(); }}
                         className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:border-rose-100 dark:hover:border-rose-800/50 hover:text-rose-600 dark:hover:text-rose-400 text-slate-600 dark:text-slate-300 px-4 py-3.5 rounded-2xl text-sm font-black transition-all shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] group"

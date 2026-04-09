@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ChevronLeft, Droplets, Receipt, User } from "lucide-react"
+import { ChevronLeft, Droplets, Receipt, User, Phone } from "lucide-react"
 import SidebarManager from "@/components/Manager/SidebarManager"
 import { getAuthToken } from "@/utils/cookies"
 import toast from "react-hot-toast"
@@ -17,8 +17,12 @@ interface Transaction {
 }
 
 interface Customer {
+    id: number
     name: string
     email: string
+    phone: string | null
+    address: string | null
+    profile_picture: string | null
 }
 
 export default function DetailRiwayatPelanggan() {
@@ -26,9 +30,21 @@ export default function DetailRiwayatPelanggan() {
     const router = useRouter()
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [customer, setCustomer] = useState<Customer | null>(null)
+    const [managerName, setManagerName] = useState("")
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        const fetchManagerData = async () => {
+            const token = getAuthToken()
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${localStorage.getItem("userId")}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                const data = await res.json()
+                if (data.status) setManagerName(data.data.name)
+            } catch (e) { console.error(e) }
+        }
+        fetchManagerData()
         fetchDetail()
     }, [id])
 
@@ -54,7 +70,11 @@ export default function DetailRiwayatPelanggan() {
 
     return (
         <div className="flex min-h-screen bg-[#F4F7FE] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
-            <SidebarManager managerName={localStorage.getItem("name") || ""} onLogout={() => {}} />
+            <SidebarManager 
+                isOpen={false} 
+                onClose={() => {}} 
+                onLogout={() => {}} 
+            />
             
             <main className="flex-1 p-8">
                 <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-6 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
@@ -62,17 +82,43 @@ export default function DetailRiwayatPelanggan() {
                 </button>
 
                 {/* Profil Singkat Pelanggan */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 mb-8 flex items-center gap-6 transition-colors">
-                    <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-3xl font-black">
-                        {customer?.name?.charAt(0)}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-4xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 mb-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden transition-colors">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-r from-indigo-600 to-blue-600"></div>
+                    
+                    <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-xl shrink-0">
+                        {customer?.profile_picture ? (
+                            <img src={customer.profile_picture.startsWith('http') ? customer.profile_picture : `${process.env.NEXT_PUBLIC_API_URL}/uploads/${customer.profile_picture}`} alt={customer.name} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-linear-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-black text-4xl">
+                                {customer?.name?.charAt(0)}
+                            </div>
+                        )}
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{customer?.name}</h1>
-                        <p className="text-slate-500 dark:text-slate-400">{customer?.email}</p>
-                        <div className="flex gap-4 mt-2">
-                            <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md font-medium">ID: #{id}</span>
-                            <span className="text-xs bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 px-2 py-1 rounded-md font-bold uppercase">Aktif</span>
+
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 mb-2">
+                            <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{customer?.name}</h1>
+                            <span className="text-[10px] bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-800/50">Aktif</span>
                         </div>
+                        <p className="text-slate-400 dark:text-slate-500 font-medium mb-4">{customer?.email}</p>
+                        
+                        <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                                <Phone size={14} className="text-indigo-500" />
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{customer?.phone || "No HP Kosong"}</span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                                <Receipt className="text-amber-500" size={14} />
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Customer ID: #{id}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="md:border-l border-slate-100 dark:border-slate-800 md:pl-8 flex flex-col gap-2 w-full md:w-auto">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center md:text-left">Alamat Terdaftar</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-bold max-w-xs leading-relaxed italic">
+                            &quot;{customer?.address || "Alamat belum diatur oleh pelanggan"}&quot;
+                        </p>
                     </div>
                 </div>
 

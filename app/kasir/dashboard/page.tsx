@@ -3,9 +3,11 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import toast, { Toaster } from "react-hot-toast"
+import toast from "react-hot-toast"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
-import { getAuthToken, getUserRole } from "@/utils/cookies"
+import { getAuthToken, getUserRole, getUserId } from "@/utils/cookies"
+import api from "@/lib/axios"
+import { useAuth } from "@/context/AuthContext"
 import { 
     Menu, 
     Droplets, 
@@ -23,6 +25,7 @@ interface Pelanggan {
 }
 
 export default function KasirDashboard() {
+    const { user: authUser, logout } = useAuth()
     // --- STATE PENCATATAN TAGIHAN ---
     const [form, setForm] = useState({
         userId: "",
@@ -34,37 +37,29 @@ export default function KasirDashboard() {
 
     // --- STATE UMUM ---
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-    const [kasirName, setKasirName] = useState("")
     const [pelanggan, setPelanggan] = useState<Pelanggan[]>([])
     
     const router = useRouter()
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    // API_URL dimigrasikan ke lib/axios.ts
 
     // --- FUNGSI AMBIL DATA PELANGGAN ---
     const fetchPelanggan = useCallback(async () => {
         try {
-            const currentToken = getAuthToken();
-            const res = await fetch(`${API_URL}/users/pelanggan`, {
-                headers: { "Authorization": `Bearer ${currentToken}` }
-            })
-            const data = await res.json()
-            if (data.status) setPelanggan(data.data)
+            const res = await api.get("/users/pelanggan")
+            if (res.data.status) setPelanggan(res.data.data)
         } catch (error) {
             toast.error("Gagal memuat data pelanggan")
         }
-    }, [API_URL])
+    }, [])
 
     useEffect(() => {
-        const token = getAuthToken()
         const role = getUserRole()
-        const name = localStorage.getItem("name")
 
-        if (!token || role !== "KASIR") {
+        if (role !== "KASIR") {
             router.push("/login")
             return
         }
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        if (name) setKasirName(name)
+
         fetchPelanggan()
     }, [router, fetchPelanggan])
 
@@ -76,32 +71,22 @@ export default function KasirDashboard() {
         }
         const loadingToast = toast.loading("Menyimpan tagihan...")
         try {
-            const res = await fetch(`${API_URL}/tagihan`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${getAuthToken()}` 
-                },
-                body: JSON.stringify(form)
-            })
-            const data = await res.json()
+            const res = await api.post("/tagihan", form)
             toast.dismiss(loadingToast)
-            if (data.status) {
+            if (res.data.status) {
                 toast.success("Tagihan Berhasil Dibuat!")
                 setForm({ ...form, meter_awal: 0, meter_akhir: 0 })
             } else {
-                toast.error(data.message)
+                toast.error(res.data.message)
             }
-        } catch (error) {
+        } catch (error: any) {
             toast.dismiss(loadingToast)
-            toast.error("Error koneksi server")
+            toast.error(error.response?.data?.message || "Error koneksi server")
         }
     }
 
     const handleLogout = () => {
-        localStorage.clear()
-        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
-        router.push('/')
+        logout()
     }
 
     // Kalkulasi Biaya
@@ -109,8 +94,7 @@ export default function KasirDashboard() {
     const estimasiBiaya = totalPemakaian * 5000
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex transition-colors duration-300">
-            <Toaster position="top-center" />
+        <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 flex transition-colors duration-300">
 
             {/* Sidebar (Persistent di Desktop) */}
             <SidebarKasir 
@@ -119,21 +103,35 @@ export default function KasirDashboard() {
                 onLogout={handleLogout} 
             />
 
-            {/* Konten Utama (Margin kiri 72 di desktop) */}
+            {/* Konten Utama */}
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all duration-300">
                 
                 {/* Header / Navbar */}
-                <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-20 transition-colors">
+                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setIsSidebarOpen(true)} 
-                            className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors"
+                            className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors"
                         >
                             <Menu size={24} />
                         </button>
                         <div>
-                            <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Input Tagihan Air</h1>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Petugas: {kasirName}</p>
+                            <h1 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Pencatatan</h1>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1.5">Hydro-Flow Officer</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
+                            {authUser?.profile_picture ? (
+                                <img 
+                                    src={authUser.profile_picture} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                (authUser?.name || "K").charAt(0).toUpperCase()
+                            )}
                         </div>
                     </div>
                 </header>

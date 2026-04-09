@@ -15,7 +15,8 @@ import {
     Send,
     X,
     MessageCircle,
-    MessageSquare
+    MessageSquare,
+    Menu
 } from "lucide-react"
 
 // 👇 Import Helper & Sidebar
@@ -83,6 +84,7 @@ export default function ManagerInbox() {
     const [searchTerm, setSearchTerm] = useState("")
     const [filterType, setFilterType] = useState<"ALL" | "USER" | "PUBLIC">("ALL")
     const [managerName, setManagerName] = useState("")
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
     const [isReplyModalOpen, setIsReplyModalOpen] = useState(false)
     const [selectedMessage, setSelectedMessage] = useState<IPengaduan | null>(null)
@@ -248,11 +250,34 @@ export default function ManagerInbox() {
     }
 
     return (
-        <div className="flex min-h-screen bg-[#F4F7FE] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
+        <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
             {/* --- SIDEBAR TETAP ADA --- */}
-            <SidebarManager managerName={managerName} onLogout={handleLogout} />
+            <SidebarManager 
+                isOpen={isSidebarOpen} 
+                onClose={() => setIsSidebarOpen(false)} 
+                onLogout={handleLogout} 
+            />
 
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all duration-300 overflow-hidden">
+                {/* --- STICKY HEADER --- */}
+                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors">
+                            <Menu size={24} />
+                        </button>
+                        <div>
+                            <h1 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Kotak Masuk</h1>
+                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest mt-1.5">Manajemen Pengaduan</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 bg-linear-to-tr from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 ring-4 ring-white">
+                            {managerName.charAt(0).toUpperCase()}
+                        </div>
+                    </div>
+                </header>
+
                 <div className="flex-1 overflow-y-auto px-6 py-8 md:px-10">
 
                     {/* Header Section */}

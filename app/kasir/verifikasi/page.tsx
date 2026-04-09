@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import toast, { Toaster } from "react-hot-toast"
-import { getAuthToken, getUserRole } from "@/utils/cookies"
+import toast from "react-hot-toast"
+import { getAuthToken, getUserRole, getUserId } from "@/utils/cookies"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
 import { 
     Menu, 
@@ -14,7 +14,8 @@ import {
     Search, 
     Clock, 
     AlertCircle,
-    ChevronRight
+    ChevronRight,
+    Trash2
 } from "lucide-react"
 
 interface ITagihanVerifikasi {
@@ -36,6 +37,8 @@ export default function VerifikasiPage() {
     const [loading, setLoading] = useState(true)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
+    const [name, setName] = useState("Kasir")
+    const [kasirProfile, setKasirProfile] = useState<any>(null)
 
     // --- STATE MODAL & PROSES ---
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -68,8 +71,23 @@ export default function VerifikasiPage() {
             router.push("/login")
             return
         }
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch(`${API_URL}/user/${getUserId()}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                const data = await res.json()
+                if (data.status) {
+                    setName(data.data.name)
+                    setKasirProfile(data.data)
+                }
+            } catch (error) {
+                console.error(error)
+            }
+        }
+        fetchProfile()
         loadData()
-    }, [router, loadData])
+    }, [router, loadData, API_URL])
 
     const filteredList = list.filter(item => 
         item.userName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -121,9 +139,24 @@ export default function VerifikasiPage() {
         finally { setProcessing(false) }
     }
 
+    const handleDelete = async (id: number) => {
+        if (!confirm("Hapus antrean verifikasi ini secara manual? Tagihan tidak akan dihapus, hanya antrean verifikasi ini.")) return;
+
+        try {
+            const res = await fetch(`${API_URL}/tagihan/verifikasi/${id}`, {
+                method: 'DELETE',
+                headers: { "Authorization": `Bearer ${getAuthToken()}` }
+            })
+            const data = await res.json()
+            if (data.status) {
+                toast.success("Antrean berhasil dihapus")
+                setList(prev => prev.filter(i => i.id !== id))
+            } else toast.error(data.message)
+        } catch (e) { toast.error("Gagal menghapus antrean") }
+    }
+
     return (
-        <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex transition-colors duration-300">
-            <Toaster position="top-center" />
+        <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 flex transition-colors duration-300">
 
             {/* Sidebar Komponen */}
             <SidebarKasir 
@@ -132,30 +165,43 @@ export default function VerifikasiPage() {
                 onLogout={handleLogout} 
             />
 
-            {/* Konten Utama - Penyesuaian lg:ml-72 */}
+            {/* Konten Utama */}
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all">
                 
                 {/* Header Section */}
-                <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-20 transition-colors">
+                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
-                            <Menu size={20} />
+                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors">
+                            <Menu size={24} />
                         </button>
                         <div>
-                            <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Verifikasi Pembayaran</h1>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest uppercase">Konfirmasi bukti transfer</p>
+                            <h1 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Verifikasi Pembayaran</h1>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1.5">Konfirmasi Transaksi</p>
                         </div>
                     </div>
                     
-                    <div className="hidden md:block relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
-                        <input 
-                            type="text" 
-                            placeholder="Cari nama pelanggan..." 
-                            className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    <div className="flex items-center gap-4">
+                        <div className="hidden md:block relative w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
+                            <input 
+                                type="text" 
+                                placeholder="Cari nama pelanggan..." 
+                                className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
+                            {kasirProfile?.profile_picture ? (
+                                <img 
+                                    src={kasirProfile.profile_picture.startsWith('http') ? kasirProfile.profile_picture : `${API_URL}/uploads/${kasirProfile.profile_picture}`} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                (name || "K").charAt(0).toUpperCase()
+                            )}
+                        </div>
                     </div>
                 </header>
 
@@ -238,6 +284,13 @@ export default function VerifikasiPage() {
                                                         className="flex-1 h-full bg-white dark:bg-transparent border-2 border-rose-100 dark:border-rose-900 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/40 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                                                     >
                                                         <XCircle size={18} /> Tolak
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(item.id)}
+                                                        className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-2xl transition-all active:scale-95"
+                                                        title="Hapus Antrean"
+                                                    >
+                                                        <Trash2 size={18} />
                                                     </button>
                                                 </div>
                                             </div>

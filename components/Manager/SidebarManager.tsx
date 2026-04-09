@@ -1,133 +1,137 @@
-// components/manager/SidebarManager.tsx
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
     LayoutDashboard,
     MessageSquare,
     FileText,
-    Settings,
     LogOut,
     Droplets,
-    ChevronRight,
-    Menu, // Icon untuk tombol buka menu
-    X     // Icon untuk tombol tutup menu
+    X,
+    Users,
+    Settings
 } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
 
 interface SidebarProps {
-    managerName: string;
-    onLogout: () => void;
+    isOpen: boolean;          // Status: buka/tutup
+    onClose: () => void;      // Fungsi tutup sidebar
+    onLogout: () => void;     // Fungsi logout
 }
 
-export default function SidebarManager({ managerName, onLogout }: SidebarProps) {
-    const pathname = usePathname();
-    const [isOpen, setIsOpen] = useState(false); // State untuk buka/tutup sidebar
+export default function SidebarManager({ isOpen, onClose, onLogout }: SidebarProps) {
+    const pathname = usePathname()
+    const { user } = useAuth()
 
-    const menuItems = [
-        { name: "Dashboard", icon: LayoutDashboard, href: "/manager/dashboard" },
-        { name: "Pengaduan", icon: MessageSquare, href: "/manager/pengaduan" },
-        { name: "Laporan", icon: FileText, href: "/manager/laporan" },
-        { name: "Pelanggan", icon: Settings, href: "/manager/pelanggan" },
-    ];
-
-    // Fungsi untuk menutup sidebar saat menu diklik (UX mobile)
-    const handleLinkClick = () => {
-        setIsOpen(false);
-    };
+    const menus = [
+        { name: "Dashboard", href: "/manager/dashboard", icon: <LayoutDashboard size={20} /> },
+        { name: "Layanan", href: "/manager/layanan", icon: <Droplets size={20} /> },
+        { name: "Pengaduan", href: "/manager/pengaduan", icon: <MessageSquare size={20} /> },
+        { name: "Laporan", href: "/manager/laporan", icon: <FileText size={20} /> },
+        { name: "Pelanggan", href: "/manager/pelanggan", icon: <Settings size={20} /> },
+        { name: "Profil Saya", href: "/manager/profile", icon: <Users size={20} /> },
+    ]
 
     return (
         <>
-            {/* --- MOBILE TOGGLE BUTTON (Hanya muncul di Mobile) --- */}
-            <div className="lg:hidden fixed top-4 left-4 z-50 print:hidden">
-                <button
-                    onClick={() => setIsOpen(true)}
-                    className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-600/20 active:scale-95 transition-transform"
-                >
-                    <Menu size={24} />
-                </button>
-            </div>
+            {/* 1. OVERLAY / BACKDROP (HANYA DI MOBILE) */}
+            <div
+                className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity duration-300 lg:hidden
+                    ${isOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}
+                `}
+                onClick={onClose}
+            ></div>
 
-            {/* --- OVERLAY BACKDROP (Hanya muncul saat sidebar terbuka di Mobile) --- */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
-
-            {/* --- SIDEBAR --- */}
-            {/* Penjelasan Class Responsive:
-                1. fixed inset-y-0 left-0: Posisi fix di kiri full height untuk mobile.
-                2. transform transition-transform: Animasi slide.
-                3. -translate-x-full: Default tersembunyi ke kiri di mobile.
-                4. lg:translate-x-0: Di desktop selalu terlihat (reset posisi).
-                5. lg:static / lg:sticky: Di desktop dia sticky/static sesuai layout.
-                6. isOpen ? "translate-x-0" : ... : Logika buka tutup mobile.
-            */}
-            <aside className={`
-                fixed lg:sticky top-0 left-0 h-screen w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 
-                flex flex-col justify-between p-6 shadow-2xl lg:shadow-sm z-50 
-                transition-all duration-300 ease-in-out print:hidden
-                ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-            `}>
-
-                {/* --- TOMBOL CLOSE (Hanya muncul di dalam sidebar Mobile) --- */}
-                <button
-                    onClick={() => setIsOpen(false)}
-                    className="absolute top-4 right-4 p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 lg:hidden"
-                >
-                    <X size={24} />
-                </button>
-
-                {/* --- LOGO SECTION --- */}
-                <div>
-                    <div className="flex items-center gap-3 mb-10 px-2 mt-2 lg:mt-0">
-                        <div className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-600/20">
-                            <Droplets size={24} strokeWidth={2.5} />
+            {/* 2. SIDEBAR PANEL */}
+            <aside
+                className={`fixed z-50 bg-white dark:bg-slate-900 flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
+                    /* MOBILE STYLE (FLOATING CARD) */
+                    top-4 bottom-4 left-4 w-[calc(100%-2rem)] max-w-70 rounded-4xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)]
+                    ${isOpen ? "translate-x-0 scale-100 opacity-100" : "-translate-x-[120%] scale-95 opacity-0"}
+                    /* DESKTOP STYLE (PERSISTENT & FIXED LEFT) */
+                    lg:top-0 lg:bottom-0 lg:left-0 lg:w-72 lg:rounded-none lg:m-0 lg:h-full lg:shadow-none lg:border-r lg:border-slate-100/80 dark:lg:border-slate-800 lg:translate-x-0 lg:scale-100 lg:opacity-100 print:hidden
+                `}
+            >
+                {/* HEADER: Logo & Tombol Close */}
+                <div className="p-6 lg:p-8 border-b border-slate-100/60 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-[#0A0F2C] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-900/20 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-linear-to-br from-blue-500/20 to-transparent"></div>
+                            <Droplets size={22} className="text-blue-400 relative z-10" strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h1 className="font-bold text-xl text-slate-900 dark:text-slate-100 tracking-tight leading-none">
-                                PDAM<span className="text-indigo-600 dark:text-indigo-400">Pintar</span>
-                            </h1>
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 tracking-wider">MANAGER OPS</p>
+                            <h1 className="font-black text-slate-800 dark:text-slate-100 text-lg leading-none tracking-tight">Hydro-FlowSystems</h1>
+                            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black tracking-widest uppercase mt-0.5 block">Manager Ops</span>
                         </div>
                     </div>
 
-                    {/* --- NAVIGATION MENU --- */}
-                    <nav className="space-y-2">
-                        {menuItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    onClick={handleLinkClick} // Tutup sidebar saat link diklik
-                                    className={`flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 group ${isActive
-                                        ? "bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"} />
-                                        <span className="font-semibold text-sm">{item.name}</span>
-                                    </div>
-                                    {isActive && <ChevronRight size={16} className="text-indigo-600 dark:text-indigo-400" />}
-                                </Link>
-                            )
-                        })}
-                    </nav>
+                    <button
+                        onClick={onClose}
+                        className="p-2.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-colors lg:hidden bg-slate-50/80 dark:bg-slate-800"
+                    >
+                        <X size={18} strokeWidth={2.5} />
+                    </button>
                 </div>
 
-                {/* --- LOGOUT SECTION --- */}
-                <div>
-                    <button
-                        onClick={onLogout}
-                        className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-red-600 dark:text-red-500 px-4 py-3 rounded-xl text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-100 dark:hover:border-red-900/50 transition-all"
+                {/* MENU LIST */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-1.5 scrollbar-hide">
+                    <p className="px-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 mt-2">
+                        Executive Menu
+                    </p>
+
+                    {menus.map((menu, index) => {
+                        const isActive = pathname === menu.href
+                        return (
+                            <Link
+                                key={index}
+                                href={menu.href}
+                                onClick={() => {
+                                    if (window.innerWidth < 1024) onClose();
+                                }}
+                                className={`flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold text-sm group
+                                    ${isActive
+                                        ? "bg-indigo-600 dark:bg-indigo-500 text-white shadow-[0_8px_20px_-6px_rgba(79,70,229,0.4)]"
+                                        : "text-slate-500 dark:text-slate-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-400"
+                                    }
+                                `}
+                            >
+                                <span className={`${isActive ? "text-white" : "text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110"} transition-all duration-300`}>
+                                    {menu.icon}
+                                </span>
+                                {menu.name}
+                            </Link>
+                        )
+                    })}
+                </div>
+
+                {/* FOOTER: User Profile & Logout */}
+                <div className="p-5 border-t border-slate-100/60 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900 rounded-b-4xl lg:rounded-none space-y-4">
+                    {/* User Profile Info */}
+                    <Link 
+                        href="/manager/profile"
+                        onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700/50 group"
                     >
-                        <LogOut size={18} />
-                        <span>Sign Out</span>
+                        <div className="w-10 h-10 bg-linear-to-tr from-indigo-600 to-indigo-400 rounded-xl flex items-center justify-center text-white font-black overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform group-hover:scale-105">
+                            {user?.profile_picture ? (
+                                <img src={user.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                (user?.name || "M").charAt(0).toUpperCase()
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase leading-tight">{user?.name || "Memuat..."}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Lihat Profil</p>
+                        </div>
+                    </Link>
+
+                    <button
+                        onClick={() => { onClose(); onLogout(); }}
+                        className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:border-rose-100 dark:hover:border-rose-800/50 hover:text-rose-600 dark:hover:text-rose-400 text-slate-600 dark:text-slate-300 px-4 py-3.5 rounded-2xl text-sm font-black transition-all shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] group"
+                    >
+                        <LogOut size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-rose-500 dark:group-hover:text-rose-400 group-hover:-translate-x-1 transition-all" />
+                        Keluar Aplikasi
                     </button>
                 </div>
             </aside>

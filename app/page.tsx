@@ -1,10 +1,23 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { getAuthToken, getUserName, getUserRole } from '@/utils/cookies'
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userName, setUserName] = useState("")
+  const [userRole, setUserRole] = useState("")
+
+  useEffect(() => {
+    const token = getAuthToken()
+    if (token) {
+        setIsLoggedIn(true)
+        setUserName(getUserName() || "User")
+        setUserRole(getUserRole() || "")
+    }
+  }, [])
 
 
 
@@ -41,13 +54,14 @@ export default function Home() {
             <Link href="/" className="flex items-center gap-3 group/logo">
               <div className="relative w-9 h-9 flex items-center justify-center">
                 <div className="absolute inset-0 bg-slate-900 rounded-xl transition-all duration-500 group-hover/logo:rotate-10 group-hover/logo:bg-indigo-600 group-hover/logo:shadow-[0_0_20px_rgba(79,70,229,0.4)]"></div>
-                <span className="relative z-10 text-white font-black text-lg">P</span>
+                <span className="relative z-10 text-white font-black text-lg">H</span>
               </div>
               <div className="hidden sm:flex flex-col gap-0">
-                <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-slate-100 leading-tight">PDAM<span className="text-indigo-600 dark:text-indigo-400">.</span></span>
+                <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-slate-100 leading-tight">hydro-flowsystems<span className="text-indigo-600 dark:text-indigo-400">.</span></span>
                 <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] -mt-0.5">Pintar AI</span>
               </div>
             </Link>
+
 
             {/* Desktop Menu - Invisible Pill Style */}
             <div className="hidden md:flex items-center gap-2">
@@ -65,15 +79,26 @@ export default function Home() {
 
             {/* Right Side - Premium CTAs */}
             <div className="flex items-center gap-3 md:gap-5">
-              <Link href="/login" className="hidden md:block text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                Masuk
-              </Link>
-              <Link
-                href="/register"
-                className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-[13px] font-bold shadow-[0_10px_20px_-5px_rgba(15,23,42,0.3)] hover:shadow-indigo-500/40 hover:bg-indigo-600 dark:hover:bg-slate-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
-              >
-                Get Started
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  href={userRole === "MANAGER" ? "/manager/dashboard" : userRole === "KASIR" ? "/kasir/dashboard" : "/user/dashboard"}
+                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-full text-[13px] font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" className="hidden md:block text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Masuk
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-[13px] font-bold shadow-[0_10px_20px_-5px_rgba(15,23,42,0.3)] hover:shadow-indigo-500/40 hover:bg-indigo-600 dark:hover:bg-slate-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
 
               {/* Mobile Menu Toggle - Sleek Minimalist */}
               <button
@@ -123,7 +148,7 @@ export default function Home() {
           </h1>
 
           <p className="text-slate-500 text-lg md:text-xl leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200">
-            Sistem monitoring dan pembayaran PDAM modern. Cek tagihan real-time, bayar instan via QRIS, dan laporkan gangguan dalam satu aplikasi.
+            Sistem monitoring dan pemantauan air modern. Cek tagihan real-time, bayar instan via QRIS, dan laporkan gangguan dalam satu aplikasi.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start w-full sm:w-auto animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
@@ -168,9 +193,15 @@ export default function Home() {
                 <div className="bg-white border-b border-slate-100 p-5 flex gap-3 items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dashboard</span>
-                    <span className="text-sm font-bold text-slate-800">Halo, Budi Santoso 👋</span>
+                    <span className="text-sm font-bold text-slate-800">Halo, {isLoggedIn ? userName : "Budi Santoso"} 👋</span>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 bg-[url('https://i.pravatar.cc/100?img=12')] bg-cover"></div>
+                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-sm overflow-hidden flex items-center justify-center">
+                    {isLoggedIn ? (
+                        <div className="w-full h-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{userName.charAt(0)}</div>
+                    ) : (
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Mock Avatar" className="w-full h-full object-cover" />
+                    )}
+                  </div>
                 </div>
 
                 {/* Mockup Body */}
@@ -320,8 +351,8 @@ export default function Home() {
             {/* Brand */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 text-white">
-                <div className="w-10 h-10 bg-linear-to-br from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-900/50">P</div>
-                <span className="font-bold text-2xl tracking-tight">PDAM Pintar</span>
+                <div className="w-10 h-10 bg-linear-to-br from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-900/50">H</div>
+                <span className="font-bold text-2xl tracking-tight">hydro-flowsystems</span>
               </div>
               <p className="text-sm leading-relaxed text-slate-500 max-w-xs">
                 Platform digitalisasi layanan air bersih terdepan di Indonesia. Memudahkan akses air bersih untuk semua.
@@ -376,7 +407,7 @@ export default function Home() {
           </div>
 
           <div className="border-t border-slate-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-xs font-medium text-slate-600">
-            <p>&copy; {new Date().getFullYear()} PDAM Pintar System. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} hydro-flowsystems. All rights reserved.</p>
             <div className="flex gap-8">
               <a href="#" className="hover:text-indigo-400 transition">Privacy</a>
               <a href="#" className="hover:text-indigo-400 transition">Terms</a>

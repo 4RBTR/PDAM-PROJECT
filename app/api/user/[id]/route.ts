@@ -11,7 +11,7 @@ export async function GET(
     const { id } = await params;
     const user = await prisma.user.findUnique({
       where: { id: parseInt(id) },
-      select: { name: true, email: true, address: true, role: true },
+      select: { id: true, name: true, email: true, address: true, role: true, phone: true, profile_picture: true },
     });
     return NextResponse.json({ status: true, data: user });
   } catch {
@@ -25,9 +25,9 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const { name, email, address, password } = await req.json();
+    const { name, email, address, password, phone, profile_picture } = await req.json();
 
-    const updateData: Record<string, unknown> = { name, email, address };
+    const updateData: Record<string, unknown> = { name, email, address, phone, profile_picture };
     if (password && password.trim() !== "") {
       updateData.password = await bcrypt.hash(password, 10);
     }
@@ -39,19 +39,28 @@ export async function PUT(
 
     return NextResponse.json({
       status: true,
-      message: "Data pelanggan berhasil diubah!",
+      message: "Data user berhasil diubah!",
       data: updatedUser,
     });
-  } catch {
+  } catch (error: any) {
+    console.error("DEBUG: Update Profile Error:", error);
+    
+    let message = "Gagal mengubah data user.";
+    if (error.code === "P2002") {
+      message = "Email sudah digunakan oleh akun lain.";
+    }
+
     return NextResponse.json(
       {
         status: false,
-        message: "Gagal mengubah data pelanggan. Email mungkin sudah dipakai.",
+        message: message,
+        error: process.env.NODE_ENV === "development" ? error.message : undefined
       },
       { status: 500 }
     );
   }
 }
+
 
 export async function DELETE(
   req: NextRequest,

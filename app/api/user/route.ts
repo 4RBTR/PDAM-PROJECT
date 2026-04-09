@@ -5,16 +5,18 @@ import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, address, role } = await req.json();
+    const { name, email, password, address, role, phone } = await req.json();
     const hashPassword = await bcrypt.hash(password, 10);
     await prisma.user.create({
-      data: { name, email, password: hashPassword, address, role: role || "PELANGGAN" },
+      data: { name, email, password: hashPassword, address, phone, role: role || "PELANGGAN" },
     });
     return NextResponse.json({ status: true, message: "User Berhasil Dibuat" });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { status: false, message: "Email sudah dipakai" },
+      { status: false, message: "Email sudah dipakai atau data tidak valid" },
       { status: 400 }
     );
   }
 }
+

@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import toast, { Toaster } from "react-hot-toast"
+import toast from "react-hot-toast"
 import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
 import SidebarUser from "@/components/User/SidebarUser"
 import {
@@ -173,7 +173,6 @@ export default function UserPengaduan() {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 flex overflow-x-hidden font-sans text-slate-800 dark:text-slate-100 selection:bg-blue-100 selection:text-blue-700 transition-colors duration-300">
-            <Toaster position="top-center" />
 
             {/* SIDEBAR COMPONENT */}
             <SidebarUser

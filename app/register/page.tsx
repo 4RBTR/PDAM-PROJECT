@@ -13,7 +13,8 @@ export default function RegisterPage() {
         name: '',
         email: '',
         password: '',
-        address: ''
+        address: '',
+        phone: ''
     })
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -26,7 +27,7 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!form.name || !form.email || !form.password || !form.address) {
+        if (!form.name || !form.email || !form.password || !form.address || !form.phone) {
             toast.error("Mohon lengkapi semua data!")
             return
         }
@@ -103,7 +104,7 @@ export default function RegisterPage() {
                     <div className="mb-8">
                         <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2 transition-colors">Buat Akun Baru 🚀</h1>
                         <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">
-                            Lengkapi data di bawah ini untuk menjadi pelanggan PDAM Pintar. Sudah punya akun?{' '}
+                            Lengkapi data di bawah ini untuk menjadi pelanggan Hydro-FlowSystems. Sudah punya akun?{' '}
                             <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">Masuk</Link>.
                         </p>
                     </div>
@@ -114,6 +115,13 @@ export default function RegisterPage() {
                         <div>
                             <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block ml-1">Nama Lengkap</label>
                             <input required name="name" type="text" placeholder="Sesuai KTP..." onChange={handleChange}
+                                className="w-full px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-950 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-100" />
+                        </div>
+
+                        {/* WhatsApp / Phone */}
+                        <div>
+                            <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block ml-1">Nomor WhatsApp</label>
+                            <input required name="phone" type="tel" placeholder="08123456..." onChange={handleChange}
                                 className="w-full px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-950 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-100" />
                         </div>
 

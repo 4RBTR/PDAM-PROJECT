@@ -4,9 +4,11 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import toast, { Toaster } from "react-hot-toast"
+import toast from "react-hot-toast"
 import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
 import SidebarUser from "@/components/User/SidebarUser"
+import api from "@/lib/axios"
+import { useAuth } from "@/context/AuthContext"
 import {
     Menu,
     Printer,
@@ -24,7 +26,7 @@ import {
 } from "lucide-react"
 
 // --- KONFIGURASI API ---
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Dimigrasikan ke lib/axios.ts
 
 interface ITagihan {
     id: number;
@@ -41,13 +43,15 @@ interface IUser {
     name: string;
     email: string;
     address: string;
+    profile_picture?: string;
+    phone?: string;
 }
 
 export default function UserDashboard() {
+    const { user: authUser, logout } = useAuth()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [tagihan, setTagihan] = useState<ITagihan[]>([])
-    const [profile, setProfile] = useState<IUser | null>(null)
-    const [name, setName] = useState("")
+    // profile and name are now managed by AuthContext
     const [userId, setUserId] = useState<string>("")
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [uploadingId, setUploadingId] = useState<number | null>(null)
@@ -57,25 +61,14 @@ export default function UserDashboard() {
 
     // --- LOGIC FETCH DATA ---
     const ambilData = useCallback(async () => {
-        const id = getUserId()
-        const token = getAuthToken()
-        if (!id || !token) return
+        if (!authUser?.id) return
         try {
-            const resT = await fetch(`${API_BASE_URL}/tagihan/${id}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const dataT = await resT.json()
-            if (dataT.status) setTagihan(dataT.data)
-
-            const resP = await fetch(`${API_BASE_URL}/user/${id}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const dataP = await resP.json()
-            if (dataP.status) setProfile(dataP.data)
+            const resT = await api.get(`/tagihan/${authUser.id}`)
+            if (resT.data.status) setTagihan(resT.data.data)
         } catch (error) {
             console.error("Error fetching data", error)
         }
-    }, [])
+    }, [authUser])
 
     useEffect(() => {
         const hour = new Date().getHours()
@@ -84,15 +77,8 @@ export default function UserDashboard() {
         else if (hour < 18) setGreeting("Selamat Sore")
         else setGreeting("Selamat Malam")
 
-        const token = getAuthToken()
         const role = getUserRole()
-        const id = getUserId()
-        const userName = getUserName()
 
-        if (!token || !id) {
-            router.push("/login")
-            return
-        }
         if (role === "MANAGER") {
             router.push("/manager/dashboard")
             return
@@ -103,38 +89,35 @@ export default function UserDashboard() {
             return
         }
 
-        setName(userName || "Pelanggan")
-        setUserId(id)
-        ambilData()
-    }, [router, ambilData])
+        if (authUser?.id) {
+            setUserId(authUser.id)
+            ambilData()
+        }
+    }, [router, ambilData, authUser])
 
     // --- LOGIC UPLOAD ---
     const handleUpload = async (id: number) => {
         if (!selectedFile) return toast.error("Pilih foto bukti transfer dulu!")
         const formData = new FormData()
         formData.append("image", selectedFile)
-        const token = getAuthToken()
         const loadingToast = toast.loading("Mengirim bukti...")
 
         try {
-            const res = await fetch(`${API_BASE_URL}/tagihan/upload/${id}`, {
-                method: 'POST',
-                headers: { "Authorization": `Bearer ${token}` },
-                body: formData
+            const res = await api.post(`/tagihan/upload/${id}`, formData, {
+                headers: { "Content-Type": "multipart/form-data" }
             })
-            const data = await res.json()
             toast.dismiss(loadingToast)
-            if (data.status) {
+            if (res.data.status) {
                 toast.success("Berhasil! Menunggu verifikasi kasir.")
                 setUploadingId(null)
                 setSelectedFile(null)
                 ambilData()
             } else {
-                toast.error("Gagal: " + data.message)
+                toast.error("Gagal: " + res.data.message)
             }
-        } catch (error) {
+        } catch (error: any) {
             toast.dismiss(loadingToast)
-            toast.error("Kesalahan koneksi.")
+            toast.error(error.response?.data?.message || "Kesalahan koneksi.")
         }
     }
 
@@ -150,7 +133,6 @@ export default function UserDashboard() {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 flex overflow-x-hidden font-sans text-slate-800 dark:text-slate-100 selection:bg-blue-100 selection:text-blue-700 print:bg-white print:block transition-colors duration-300">
-            <Toaster position="top-center" />
 
             {/* SIDEBAR COMPONENT */}
             <SidebarUser
@@ -181,8 +163,16 @@ export default function UserDashboard() {
                         <button onClick={() => window.print()} className="hidden sm:flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 transition-all shadow-sm">
                             <Printer size={16} /> Cetak
                         </button>
-                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white">
-                            {name.charAt(0).toUpperCase()}
+                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
+                            {authUser?.profile_picture ? (
+                                <img 
+                                    src={authUser.profile_picture} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                (authUser?.name || "P").charAt(0).toUpperCase()
+                            )}
                         </div>
                     </div>
                 </header>
@@ -196,16 +186,24 @@ export default function UserDashboard() {
                         <div className="absolute bottom-0 left-0 w-75 h-75 bg-blue-400/20 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
 
                         <div className="relative z-10 text-white w-full md:w-auto">
-                            <p className="text-blue-200/80 font-medium text-sm mb-3">
-                                {greeting},
+                            <p className="text-blue-200/60 font-black uppercase tracking-[0.3em] text-[10px] mb-4">
+                                {greeting} 👋
                             </p>
-                            <h2 className="text-4xl md:text-5xl font-black capitalize mb-6 tracking-tight leading-tight">{name}</h2>
-
-                            <div className="inline-flex items-center gap-3 text-sm bg-white/5 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/10 shadow-inner">
-                                <div className="p-1.5 bg-blue-500/20 rounded-lg">
-                                    <MapPin size={16} className="text-blue-400 shrink-0" />
+                            <h2 className="text-4xl md:text-6xl font-black capitalize mb-8 tracking-tighter leading-none">{authUser?.name || "Pelanggan"}</h2>
+                            
+                            <div className="flex flex-wrap gap-4">
+                                <div className="inline-flex items-center gap-3 text-xs bg-white/10 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/10 shadow-inner group/addr">
+                                    <div className="p-2 bg-blue-500/20 rounded-xl group-hover/addr:bg-blue-500/40 transition-colors">
+                                        <MapPin size={14} className="text-blue-400 shrink-0" />
+                                    </div>
+                                    <span className="font-bold text-blue-50 max-w-[200px] truncate">{authUser?.address || "Memuat alamat..."}</span>
                                 </div>
-                                <span className="font-medium text-blue-50 line-clamp-1">{profile?.address || "Memuat alamat..."}</span>
+                                <div className="inline-flex items-center gap-3 text-xs bg-white/10 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/10 shadow-inner group/role">
+                                    <div className="p-2 bg-emerald-500/20 rounded-xl group-hover/role:bg-emerald-500/40 transition-colors">
+                                        <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                                    </div>
+                                    <span className="font-bold text-emerald-50">Pelanggan Aktif</span>
+                                </div>
                             </div>
                         </div>
 
@@ -215,7 +213,7 @@ export default function UserDashboard() {
                                 <p className="text-[11px] font-black text-blue-300/80 uppercase tracking-[0.2em] mb-2">ID Pelanggan</p>
                                 <div className="flex items-center gap-3">
                                     <span className="text-blue-400 font-black text-2xl">#</span>
-                                    <p className="text-4xl font-mono font-black text-white tracking-widest">{userId.padStart(5, '0')}</p>
+                                    <p className="text-4xl font-mono font-black text-white tracking-widest">{String(userId || '').padStart(5, '0')}</p>
                                 </div>
                             </div>
                         </div>
@@ -406,8 +404,8 @@ export default function UserDashboard() {
                     </div>
 
                     {/* FOOTER */}
-                    <div className="text-center mt-16 pt-8 text-slate-400 dark:text-slate-500 text-sm font-medium print:hidden">
-                        <p>&copy; {new Date().getFullYear()} PDAM Pintar. Butuh bantuan? <button onClick={() => router.push('/user/pengaduan')} className="text-blue-600 dark:text-blue-400 font-bold hover:underline">Hubungi CS</button></p>
+                    <div className="text-center mt-16 pt-8 text-slate-400 dark:text-slate-500 text-sm font-medium print:hidden border-t border-slate-100 dark:border-slate-800">
+                        <p>&copy; {new Date().getFullYear()} Hydro-FlowSystems. Butuh bantuan? <button onClick={() => router.push('/user/pengaduan')} className="text-blue-600 dark:text-blue-400 font-bold hover:underline">Hubungi CS</button></p>
                     </div>
                 </div>
             </main>

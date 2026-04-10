@@ -48,7 +48,7 @@ export default function KelolaPelangganPage() {
             const res = await api.get("/users/pelanggan")
             const data = res.data
             if (data.status) setPelanggan(data.data)
-        } catch (error) {
+        } catch {
             toast.error("Gagal memuat data pelanggan")
         } finally {
             setLoading(false)
@@ -119,7 +119,7 @@ export default function KelolaPelangganPage() {
                                 toast.success("Berhasil dihapus", { id: load })
                                 fetchPelanggan()
                             } else toast.error(data.message, { id: load })
-                        } catch (e) { toast.error("Error koneksi", { id: load }) }
+                        } catch { toast.error("Error koneksi", { id: load }) }
                     }} className="px-3 py-1 bg-red-600 text-white rounded-md text-xs font-bold">Hapus</button>
                 </div>
             </div>
@@ -170,7 +170,7 @@ export default function KelolaPelangganPage() {
                 setShowForm(false)
                 fetchPelanggan()
             } else toast.error(data.message)
-        } catch (e) { 
+        } catch { 
             toast.dismiss(loadingToast)
             toast.error("Koneksi gagal") 
         }

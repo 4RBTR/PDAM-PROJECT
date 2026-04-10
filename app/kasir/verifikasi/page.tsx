@@ -54,7 +54,7 @@ export default function VerifikasiPage() {
             const res = await api.get("/tagihan/verifikasi")
             const data = res.data
             if (data.status) setList(data.data)
-        } catch (error) {
+        } catch {
             toast.error("Gagal memuat data verifikasi")
         } finally {
             setLoading(false)
@@ -124,7 +124,7 @@ export default function VerifikasiPage() {
                 setList(prev => prev.filter(i => i.id !== selectedItem.id))
                 closeModal()
             } else toast.error(data.message)
-        } catch (e) { toast.error("Koneksi gagal") }
+        } catch { toast.error("Koneksi gagal") }
         finally { setProcessing(false) }
     }
 
@@ -138,7 +138,7 @@ export default function VerifikasiPage() {
                 toast.success("Antrean berhasil dihapus")
                 setList(prev => prev.filter(i => i.id !== id))
             } else toast.error(data.message)
-        } catch (e) { toast.error("Gagal menghapus antrean") }
+        } catch { toast.error("Gagal menghapus antrean") }
     }
 
     return (

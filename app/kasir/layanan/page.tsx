@@ -7,7 +7,7 @@ import SidebarKasir from "@/components/Kasir/SidebarKasir"
 import { getAuthToken, getUserRole } from "@/utils/cookies"
 import { 
     Menu, Search, Clock, CheckCircle, XCircle, 
-    RefreshCw, Filter, Phone, MapPin, User,
+    RefreshCw, Phone, User,
     Trash2
 } from "lucide-react"
 import api from "@/lib/axios"
@@ -45,7 +45,7 @@ export default function KasirLayananPage() {
         try {
             const res = await api.get(`/layanan?role=${role}`)
             if (res.data.status) setLayanan(res.data.data)
-        } catch (error) {
+        } catch {
             toast.error("Gagal memuat data")
         } finally {
             setLoading(false)

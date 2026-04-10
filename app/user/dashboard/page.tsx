@@ -1,11 +1,9 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
+import { getUserRole, removeAuthToken } from "@/utils/cookies"
 import SidebarUser from "@/components/User/SidebarUser"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
@@ -20,7 +18,6 @@ import {
     CheckCircle2,
     UploadCloud,
     CreditCard,
-    X,
     Receipt,
     ArrowRight
 } from "lucide-react"
@@ -65,8 +62,8 @@ export default function UserDashboard() {
         try {
             const resT = await api.get(`/tagihan/${authUser.id}`)
             if (resT.data.status) setTagihan(resT.data.data)
-        } catch (error) {
-            console.error("Error fetching data", error)
+        } catch {
+            console.error("Error fetching data")
         }
     }, [authUser])
 

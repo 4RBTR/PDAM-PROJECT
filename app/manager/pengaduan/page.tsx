@@ -130,7 +130,7 @@ export default function ManagerInbox() {
                 }))
                 setMessages(formattedData.reverse())
             }
-        } catch (error) {
+        } catch {
             toast.error("Gagal memuat pesan")
         } finally {
             setLoading(false)
@@ -177,7 +177,7 @@ export default function ManagerInbox() {
                                 } else {
                                     toast.error("Gagal menghapus pesan", { id: loadingToast });
                                 }
-                            } catch (error) {
+                            } catch {
                                 toast.error("Masalah koneksi server", { id: loadingToast });
                             }
                         }}
@@ -231,7 +231,7 @@ export default function ManagerInbox() {
                 setMessages(prev => prev.map(m => m.id === selectedMessage.id ? { ...m, status: "SELESAI", tanggapan: replyText } : m))
                 setIsReplyModalOpen(false)
             }
-        } catch (error) {
+        } catch {
             toast.error("Gagal mengirim")
         } finally {
             setIsSending(false)

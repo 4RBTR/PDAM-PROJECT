@@ -39,14 +39,13 @@ export default function ManagerLayananPage() {
 
     const ambilData = useCallback(async () => {
         setLoading(true)
-        const token = getAuthToken()
         const role = getUserRole()
         
         try {
             const res = await api.get(`/layanan?role=${role}`)
             const data = res.data
             if (data.status) setLayanan(data.data)
-        } catch (error) {
+        } catch {
             toast.error("Gagal memuat data")
         } finally {
             setLoading(false)

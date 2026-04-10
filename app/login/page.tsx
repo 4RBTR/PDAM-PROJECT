@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import toast from "react-hot-toast"
 import { setAuthData } from "@/utils/cookies"
+import api from "@/lib/axios"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
@@ -19,21 +20,8 @@ export default function LoginPage() {
         setLoading(true)
 
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL
-
-            if (!baseUrl) {
-                toast.error("URL Backend belum disetting di .env.local")
-                setLoading(false)
-                return
-            }
-
-            const res = await fetch(`${baseUrl}/user/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            })
-
-            const data = await res.json()
+            const res = await api.post("/user/login", { email, password })
+            const data = res.data
 
             if (data.status === false || data.success === false) {
                 toast.error(data.message || "Login gagal")
@@ -58,9 +46,9 @@ export default function LoginPage() {
                 toast.error("Gagal membaca data akun.")
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Login Error:", error)
-            toast.error("Gagal terhubung ke server. Cek IP di .env.local")
+            toast.error(error.response?.data?.message || "Gagal terhubung ke server.")
         } finally {
             setLoading(false)
         }

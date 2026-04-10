@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import SidebarManager from "@/components/Manager/SidebarManager"
 import { getAuthToken, getUserRole, getUserId, removeAuthToken } from "@/utils/cookies"
+import api from "@/lib/axios"
 import { 
     Search, Clock, CheckCircle, XCircle, 
     RefreshCw, Phone, User as UserIcon, Menu
 } from "lucide-react"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+// API_URL dimigrasikan ke lib/axios.ts
 
 interface ILayanan {
     id: number
@@ -42,10 +43,8 @@ export default function ManagerLayananPage() {
         const role = getUserRole()
         
         try {
-            const res = await fetch(`${API_BASE_URL}/layanan?role=${role}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get(`/layanan?role=${role}`)
+            const data = res.data
             if (data.status) setLayanan(data.data)
         } catch (error) {
             toast.error("Gagal memuat data")
@@ -64,10 +63,8 @@ export default function ManagerLayananPage() {
 
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/user/${getUserId()}`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                })
-                const data = await res.json()
+                const res = await api.get(`/user/${getUserId()}`)
+                const data = res.data
                 if (data.status) {
                     setManagerName(data.data.name)
                     setManagerProfile(data.data)
@@ -115,7 +112,7 @@ export default function ManagerLayananPage() {
                         <div className="w-11 h-11 bg-linear-to-tr from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 ring-4 ring-white overflow-hidden relative">
                             {managerProfile?.profile_picture ? (
                                 <img 
-                                    src={managerProfile.profile_picture.startsWith('http') ? managerProfile.profile_picture : `${API_BASE_URL}/uploads/${managerProfile.profile_picture}`} 
+                                    src={managerProfile.profile_picture.startsWith('http') ? managerProfile.profile_picture : `/api/uploads/${managerProfile.profile_picture}`} 
                                     alt="Profile" 
                                     className="w-full h-full object-cover"
                                 />

@@ -22,8 +22,9 @@ import {
 // 👇 Import Helper & Sidebar
 import { getAuthToken, getUserRole, removeAuthToken } from "@/utils/cookies"
 import SidebarManager from "@/components/Manager/SidebarManager"
+import api from "@/lib/axios"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+// API_URL dimigrasikan ke lib/axios.ts
 
 interface IPengaduan {
     id: number;
@@ -110,11 +111,8 @@ export default function ManagerInbox() {
     const fetchMessages = async () => {
         setLoading(true)
         try {
-            const token = getAuthToken();
-            const res = await fetch(`${API_BASE_URL}/manager/pengaduan`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get("/manager/pengaduan")
+            const data = res.data
 
             if (data.status) {
                 const formattedData: IPengaduan[] = data.data.map((item: IApiPengaduan) => ({
@@ -170,12 +168,8 @@ export default function ManagerInbox() {
                             const loadingToast = toast.loading("Sedang menghapus...");
 
                             try {
-                                const token = getAuthToken();
-                                const res = await fetch(`${API_BASE_URL}/manager/pengaduan/${id}`, {
-                                    method: 'DELETE',
-                                    headers: { "Authorization": `Bearer ${token}` }
-                                });
-                                const data = await res.json();
+                                const res = await api.delete(`/manager/pengaduan/${id}`)
+                                const data = res.data
 
                                 if (data.status) {
                                     setMessages(prev => prev.filter(msg => msg.id !== id));
@@ -227,16 +221,11 @@ export default function ManagerInbox() {
         if (!replyText.trim() || !selectedMessage) return toast.error("Isi balasan dulu");
         setIsSending(true)
         try {
-            const token = getAuthToken();
-            const res = await fetch(`${API_BASE_URL}/manager/pengaduan/${selectedMessage.id}`, {
-                method: 'PUT',
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: "SELESAI", tanggapan: replyText })
+            const res = await api.put(`/manager/pengaduan/${selectedMessage.id}`, {
+                status: "SELESAI",
+                tanggapan: replyText
             })
-            const data = await res.json()
+            const data = res.data
             if (data.status) {
                 toast.success("Balasan terkirim!");
                 setMessages(prev => prev.map(m => m.id === selectedMessage.id ? { ...m, status: "SELESAI", tanggapan: replyText } : m))
@@ -362,7 +351,7 @@ export default function ManagerInbox() {
 
                                                 <div className="flex items-center gap-2">
                                                     {msg.foto && (
-                                                        <a href={msg.foto.startsWith('http') ? msg.foto : `${API_BASE_URL}/uploads/${msg.foto}`} target="_blank" rel="noreferrer" className="p-2 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition">
+                                                        <a href={msg.foto.startsWith('http') ? msg.foto : `/api/uploads/${msg.foto}`} target="_blank" rel="noreferrer" className="p-2 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition">
                                                             <ImageIcon size={18} />
                                                         </a>
                                                     )}

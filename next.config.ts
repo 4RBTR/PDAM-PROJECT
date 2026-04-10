@@ -3,10 +3,9 @@ const nextConfig = {
     images: {
         remotePatterns: [
             {
-                protocol: 'http',
-                hostname: 'localhost',
-                port: '8000', // Port backend kamu
-                pathname: '/uploads/**', // Folder tempat gambar disimpan
+                protocol: 'https',
+                hostname: 'mdvmbcdtflkixendrrdw.supabase.co',
+                pathname: '/storage/v1/object/public/**',
             },
         ],
     },

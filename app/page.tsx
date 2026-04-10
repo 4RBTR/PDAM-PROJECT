@@ -13,9 +13,9 @@ export default function Home() {
   useEffect(() => {
     const token = getAuthToken()
     if (token) {
-        setIsLoggedIn(true)
-        setUserName(getUserName() || "User")
-        setUserRole(getUserRole() || "")
+      setIsLoggedIn(true)
+      setUserName(getUserName() || "User")
+      setUserRole(getUserRole() || "")
     }
   }, [])
 
@@ -64,7 +64,7 @@ export default function Home() {
 
 
             {/* Desktop Menu - Invisible Pill Style */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md: items-center gap-2">
               {['About', 'Services', 'Contact'].map((item) => (
                 <Link
                   key={item}
@@ -197,9 +197,9 @@ export default function Home() {
                   </div>
                   <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-sm overflow-hidden flex items-center justify-center">
                     {isLoggedIn ? (
-                        <div className="w-full h-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{userName.charAt(0)}</div>
+                      <div className="w-full h-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{userName.charAt(0)}</div>
                     ) : (
-                        <img src="https://i.pravatar.cc/100?img=12" alt="Mock Avatar" className="w-full h-full object-cover" />
+                      <img src="https://i.pravatar.cc/100?img=12" alt="Mock Avatar" className="w-full h-full object-cover" />
                     )}
                   </div>
                 </div>

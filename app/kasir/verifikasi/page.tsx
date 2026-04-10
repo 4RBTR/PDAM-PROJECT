@@ -6,6 +6,7 @@ import Image from "next/image"
 import toast from "react-hot-toast"
 import { getAuthToken, getUserRole, getUserId } from "@/utils/cookies"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
+import api from "@/lib/axios"
 import { 
     Menu, 
     CheckCircle, 
@@ -29,7 +30,7 @@ interface ITagihanVerifikasi {
 }
 
 export default function VerifikasiPage() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    // API_URL dimigrasikan ke lib/axios.ts
     const router = useRouter()
 
     // --- STATE ---
@@ -50,18 +51,15 @@ export default function VerifikasiPage() {
     const loadData = useCallback(async () => {
         setLoading(true)
         try {
-            const token = getAuthToken()
-            const res = await fetch(`${API_URL}/tagihan/verifikasi`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get("/tagihan/verifikasi")
+            const data = res.data
             if (data.status) setList(data.data)
         } catch (error) {
             toast.error("Gagal memuat data verifikasi")
         } finally {
             setLoading(false)
         }
-    }, [API_URL])
+    }, [])
 
     useEffect(() => {
         const token = getAuthToken()
@@ -73,10 +71,8 @@ export default function VerifikasiPage() {
         }
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`${API_URL}/user/${getUserId()}`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                })
-                const data = await res.json()
+                const res = await api.get(`/user/${getUserId()}`)
+                const data = res.data
                 if (data.status) {
                     setName(data.data.name)
                     setKasirProfile(data.data)
@@ -87,7 +83,7 @@ export default function VerifikasiPage() {
         }
         fetchProfile()
         loadData()
-    }, [router, loadData, API_URL])
+    }, [router, loadData])
 
     const filteredList = list.filter(item => 
         item.userName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -121,15 +117,8 @@ export default function VerifikasiPage() {
 
         setProcessing(true)
         try {
-            const res = await fetch(`${API_URL}/tagihan/verifikasi/${selectedItem.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify({ aksi: actionType, catatan })
-            })
-            const data = await res.json()
+            const res = await api.put(`/tagihan/verifikasi/${selectedItem.id}`, { aksi: actionType, catatan })
+            const data = res.data
             if (data.status) {
                 toast.success(actionType === 'TERIMA' ? "Pembayaran Disetujui" : "Pembayaran Ditolak")
                 setList(prev => prev.filter(i => i.id !== selectedItem.id))
@@ -143,11 +132,8 @@ export default function VerifikasiPage() {
         if (!confirm("Hapus antrean verifikasi ini secara manual? Tagihan tidak akan dihapus, hanya antrean verifikasi ini.")) return;
 
         try {
-            const res = await fetch(`${API_URL}/tagihan/verifikasi/${id}`, {
-                method: 'DELETE',
-                headers: { "Authorization": `Bearer ${getAuthToken()}` }
-            })
-            const data = await res.json()
+            const res = await api.delete(`/tagihan/verifikasi/${id}`)
+            const data = res.data
             if (data.status) {
                 toast.success("Antrean berhasil dihapus")
                 setList(prev => prev.filter(i => i.id !== id))
@@ -194,7 +180,7 @@ export default function VerifikasiPage() {
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {kasirProfile?.profile_picture ? (
                                 <img 
-                                    src={kasirProfile.profile_picture.startsWith('http') ? kasirProfile.profile_picture : `${API_URL}/uploads/${kasirProfile.profile_picture}`} 
+                                    src={kasirProfile.profile_picture.startsWith('http') ? kasirProfile.profile_picture : `/api/uploads/${kasirProfile.profile_picture}`} 
                                     alt="Profile" 
                                     className="w-full h-full object-cover"
                                 />
@@ -238,14 +224,14 @@ export default function VerifikasiPage() {
                                         {/* Bagian Gambar */}
                                         <div className="w-full lg:w-48 h-48 relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
                                             <Image 
-                                                src={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `${API_URL}/uploads/${item.bukti_bayar}`}
+                                                src={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `/api/uploads/${item.bukti_bayar}`}
                                                 alt="Bukti Transfer"
                                                 fill
                                                 className="object-cover group-hover:scale-110 transition-transform duration-500"
                                                 unoptimized
                                             />
                                             <a 
-                                                href={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `${API_URL}/uploads/${item.bukti_bayar}`} 
+                                                href={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `/api/uploads/${item.bukti_bayar}`} 
                                                 target="_blank" 
                                                 className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
                                             >

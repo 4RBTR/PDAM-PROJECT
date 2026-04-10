@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react' // useEffect ditambah untuk scroll navbar
 import Link from 'next/link'
 import toast from "react-hot-toast"
+import api from "@/lib/axios"
 
 export default function ContactPage() {
     // 👇 LOGIKA ASLI
-    const API_URL = process.env.NEXT_PUBLIC_API_URL
+    // API_URL dimigrasikan ke lib/axios.ts
 
     const [form, setForm] = useState({ nama: "", email: "", pesan: "" })
     const [loading, setLoading] = useState(false)
@@ -33,17 +34,10 @@ export default function ContactPage() {
         setLoading(true)
 
         try {
-            const res = await fetch(`${API_URL}/contact`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(form)
-            })
+            const res = await api.post("/contact", form)
+            const data = res.data
 
-            const data = await res.json()
-
-            if (res.ok && data.status) {
+            if (data.status) {
                 toast.success("Pesan berhasil dikirim! Tim kami akan menghubungi Anda. 🚀");
                 setForm({ nama: "", email: "", pesan: "" })
             } else {

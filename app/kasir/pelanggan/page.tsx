@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
 import { getAuthToken, getUserRole } from "@/utils/cookies"
+import api from "@/lib/axios"
 import {
     Users, Search, UserPlus, Edit3, Trash2,
     MapPin, RefreshCw, X, Eye, Phone
@@ -38,24 +39,21 @@ export default function KelolaPelangganPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null)
 
     const router = useRouter()
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    // API_URL dimigrasikan ke lib/axios.ts
 
     // --- FETCH DATA ---
     const fetchPelanggan = useCallback(async () => {
         setLoading(true)
         try {
-            const token = getAuthToken()
-            const res = await fetch(`${API_URL}/users/pelanggan`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get("/users/pelanggan")
+            const data = res.data
             if (data.status) setPelanggan(data.data)
         } catch (error) {
             toast.error("Gagal memuat data pelanggan")
         } finally {
             setLoading(false)
         }
-    }, [API_URL])
+    }, [])
 
     useEffect(() => {
         const token = getAuthToken()
@@ -115,11 +113,8 @@ export default function KelolaPelangganPage() {
                         toast.dismiss(t.id)
                         const load = toast.loading("Menghapus...")
                         try {
-                            const res = await fetch(`${API_URL}/user/${id}`, {
-                                method: 'DELETE',
-                                headers: { "Authorization": `Bearer ${getAuthToken()}` }
-                            })
-                            const data = await res.json()
+                            const res = await api.delete(`/user/${id}`)
+                            const data = res.data
                             if (data.status) {
                                 toast.success("Berhasil dihapus", { id: load })
                                 fetchPelanggan()
@@ -142,12 +137,10 @@ export default function KelolaPelangganPage() {
                 const formData = new FormData()
                 formData.append("image", selectedImage)
                 
-                const uploadRes = await fetch(`${API_URL}/user/upload-profile`, { // Corrected endpoint
-                    method: 'POST',
-                    headers: { "Authorization": `Bearer ${getAuthToken()}` },
-                    body: formData
+                const uploadRes = await api.post("/user/upload-profile", formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
                 })
-                const uploadData = await uploadRes.json()
+                const uploadData = uploadRes.data
                 if (uploadData.status) {
                     currentProfilePicture = uploadData.data.url
                 } else {
@@ -155,9 +148,6 @@ export default function KelolaPelangganPage() {
                 }
             }
 
-            const method = editId ? 'PUT' : 'POST'
-            const url = editId ? `${API_URL}/user/${editId}` : `${API_URL}/user`
-            
             const bodyData = { 
                 ...formUser, 
                 profile_picture: currentProfilePicture,
@@ -166,12 +156,13 @@ export default function KelolaPelangganPage() {
             
             if (editId && !formUser.password) delete bodyData.password
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
-                body: JSON.stringify(bodyData)
-            })
-            const data = await res.json()
+            let res;
+            if (editId) {
+                res = await api.put(`/user/${editId}`, bodyData)
+            } else {
+                res = await api.post("/user", bodyData)
+            }
+            const data = res.data
             toast.dismiss(loadingToast)
 
             if (data.status) {
@@ -293,7 +284,7 @@ export default function KelolaPelangganPage() {
                                                     <div className="flex items-center gap-3">
                                                         {p.profile_picture ? (
                                                             <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-                                                                <img src={p.profile_picture} alt={p.name} className="w-full h-full object-cover" />
+                                                                <img src={p.profile_picture.startsWith('http') ? p.profile_picture : `/api/uploads/${p.profile_picture}`} alt={p.name} className="w-full h-full object-cover" />
                                                             </div>
                                                         ) : (
                                                             <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm">
@@ -428,7 +419,7 @@ export default function KelolaPelangganPage() {
                             <div className="flex flex-col items-center mb-8">
                                 <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-xl mb-4">
                                     {selectedPelanggan.profile_picture ? (
-                                        <img src={selectedPelanggan.profile_picture} alt={selectedPelanggan.name} className="w-full h-full object-cover" />
+                                        <img src={selectedPelanggan.profile_picture.startsWith('http') ? selectedPelanggan.profile_picture : `/api/uploads/${selectedPelanggan.profile_picture}`} alt={selectedPelanggan.name} className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-4xl">
                                             {selectedPelanggan.name.charAt(0).toUpperCase()}

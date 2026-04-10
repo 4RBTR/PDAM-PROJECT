@@ -5,8 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+import api from '@/lib/axios'
 
 export default function RegisterPage() {
     const [form, setForm] = useState({
@@ -40,13 +39,9 @@ export default function RegisterPage() {
         setLoading(true)
 
         try {
-            const res = await fetch(`${API_BASE_URL}/user`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...form, role: "PELANGGAN" })
-            })
+            const res = await api.post("/user", { ...form, role: "PELANGGAN" })
 
-            const data = await res.json()
+            const data = res.data
 
             if (data.status || data.success) {
                 toast.success("Akun berhasil dibuat! Mengarahkan...")
@@ -54,9 +49,9 @@ export default function RegisterPage() {
             } else {
                 toast.error(data.message || "Gagal mendaftar")
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast.error("Terjadi kesalahan koneksi")
+            toast.error(error.response?.data?.message || "Terjadi kesalahan koneksi")
         } finally {
             setLoading(false)
         }

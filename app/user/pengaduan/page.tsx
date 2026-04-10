@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
 import SidebarUser from "@/components/User/SidebarUser"
+import api from "@/lib/axios"
 import {
     Menu,
     MessageSquarePlus,
@@ -32,7 +33,7 @@ interface IPengaduan {
 }
 
 export default function UserPengaduan() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL
+    // API_URL dimigrasikan ke lib/axios.ts
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [riwayat, setRiwayat] = useState<IPengaduan[]>([])
@@ -51,10 +52,8 @@ export default function UserPengaduan() {
         if (!id || !token) return
 
         try {
-            const res = await fetch(`${API_URL}/pengaduan/user/${id}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get(`/pengaduan/user/${id}`)
+            const data = res.data
 
             if (data.status) {
                 // Reverse agar laporan terbaru ada di atas
@@ -63,7 +62,7 @@ export default function UserPengaduan() {
         } catch (error) {
             toast.error("Gagal terhubung ke server")
         }
-    }, [API_URL])
+    }, [])
 
     // --- CEK AUTH ---
     useEffect(() => {
@@ -99,12 +98,10 @@ export default function UserPengaduan() {
         if (foto) formData.append("image", foto)
 
         try {
-            const res = await fetch(`${API_URL}/pengaduan`, {
-                method: 'POST',
-                headers: { "Authorization": `Bearer ${token}` },
-                body: formData
+            const res = await api.post("/pengaduan", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
             })
-            const data = await res.json()
+            const data = res.data
             toast.dismiss(loadingToast)
 
             if (data.status) {
@@ -130,11 +127,8 @@ export default function UserPengaduan() {
         const loadingToast = toast.loading("Sedang menghapus...")
 
         try {
-            const res = await fetch(`${API_URL}/pengaduan/${id}`, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.delete(`/pengaduan/${id}`)
+            const data = res.data
 
             if (data.status) {
                 toast.success("Laporan dibatalkan", { id: loadingToast })
@@ -375,12 +369,12 @@ export default function UserPengaduan() {
                                                     <div className="w-full md:w-40 h-48 md:h-32 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative group/img">
                                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                                         <img
-                                                            src={item.foto.startsWith('http') ? item.foto : `${API_URL}/uploads/${item.foto}`}
+                                                            src={item.foto.startsWith('http') ? item.foto : `/api/uploads/${item.foto}`}
                                                             alt="Bukti Pengaduan"
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
                                                         />
                                                         <a
-                                                            href={item.foto.startsWith('http') ? item.foto : `${API_URL}/uploads/${item.foto}`}
+                                                            href={item.foto.startsWith('http') ? item.foto : `/api/uploads/${item.foto}`}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold uppercase tracking-widest"

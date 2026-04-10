@@ -8,8 +8,9 @@ import {
     ChevronLeft, ChevronRight, Menu} from "lucide-react"
 import { getAuthToken, getUserRole, removeAuthToken } from "@/utils/cookies"
 import SidebarManager from "@/components/Manager/SidebarManager"
+import api from "@/lib/axios"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+// API_URL dimigrasikan ke lib/axios.ts
 
 interface ITagihan {
     id: number;
@@ -54,11 +55,8 @@ export default function LaporanManager() {
 
     const fetchLaporanData = async () => {
         try {
-            const token = getAuthToken()
-            const res = await fetch(`${API_URL}/manager/dashboard`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get("/manager/dashboard")
+            const data = res.data
             if (data.status) {
                 setTransaksi(data.data)
             }

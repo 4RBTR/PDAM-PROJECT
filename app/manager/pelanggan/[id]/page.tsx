@@ -5,6 +5,7 @@ import { ChevronLeft, Droplets, Receipt, User, Phone } from "lucide-react"
 import SidebarManager from "@/components/Manager/SidebarManager"
 import { getAuthToken } from "@/utils/cookies"
 import toast from "react-hot-toast"
+import api from "@/lib/axios"
 
 interface Transaction {
     id: string | number
@@ -37,10 +38,8 @@ export default function DetailRiwayatPelanggan() {
         const fetchManagerData = async () => {
             const token = getAuthToken()
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${localStorage.getItem("userId")}`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                })
-                const data = await res.json()
+                const res = await api.get(`/user/${localStorage.getItem("userId")}`)
+                const data = res.data
                 if (data.status) setManagerName(data.data.name)
             } catch (e) { console.error(e) }
         }
@@ -50,11 +49,8 @@ export default function DetailRiwayatPelanggan() {
 
     const fetchDetail = async () => {
         try {
-            const token = getAuthToken()
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/manager/users/${id}/history`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            })
-            const data = await res.json()
+            const res = await api.get(`/manager/users/${id}/history`)
+            const data = res.data
             if (data.status) {
                 setTransactions(data.transactions)
                 setCustomer(data.user)
@@ -87,7 +83,7 @@ export default function DetailRiwayatPelanggan() {
                     
                     <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-xl shrink-0">
                         {customer?.profile_picture ? (
-                            <img src={customer.profile_picture.startsWith('http') ? customer.profile_picture : `${process.env.NEXT_PUBLIC_API_URL}/uploads/${customer.profile_picture}`} alt={customer.name} className="w-full h-full object-cover" />
+                            <img src={customer.profile_picture.startsWith('http') ? customer.profile_picture : `/api/uploads/${customer.profile_picture}`} alt={customer.name} className="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full bg-linear-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-black text-4xl">
                                 {customer?.name?.charAt(0)}

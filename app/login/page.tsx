@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client"
 
 import { useState } from "react"
@@ -7,6 +6,7 @@ import Link from "next/link"
 import toast from "react-hot-toast"
 import { setAuthData } from "@/utils/cookies"
 import api from "@/lib/axios"
+import Image from "next/image"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
@@ -46,9 +46,10 @@ export default function LoginPage() {
                 toast.error("Gagal membaca data akun.")
             }
 
-        } catch (error: any) {
-            console.error("Login Error:", error)
-            toast.error(error.response?.data?.message || "Gagal terhubung ke server.")
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            console.error("Login Error:", err)
+            toast.error(err.response?.data?.message || "Gagal terhubung ke server.")
         } finally {
             setLoading(false)
         }
@@ -60,9 +61,11 @@ export default function LoginPage() {
 
             <div className="hidden lg:block lg:w-1/2 relative bg-slate-900">
 
-                <img
+                <Image
                     src="https://images.unsplash.com/photo-1629375701431-01e6d1415dc9?q=80&w=1174&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                     alt="PDAM Digital Cover"
+                    fill
+                    priority
                     className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-screen"
                 />
 

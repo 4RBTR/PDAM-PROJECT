@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import {
@@ -50,21 +50,32 @@ export default function DaftarPelangganManager() {
 
     const router = useRouter()
 
-    useEffect(() => {
-        const token = getAuthToken()
-        const role = getUserRole()
-        const name = localStorage.getItem("name")
-
-        if (!token || role !== "MANAGER") {
-            router.replace("/login")
-            return
+    const fetchFallbackFromDashboard = useCallback(async () => {
+        try {
+            const res = await api.get("/manager/dashboard")
+            const data = res.data
+            if (data.status && Array.isArray(data.data)) {
+                // Mengambil user unik dari data transaksi dashboard
+                const usersMap = new Map();
+                data.data.forEach((t: ITransactionData) => {
+                    if (t.user && !usersMap.has(t.user.id)) {
+                        usersMap.set(t.user.id, {
+                            id: t.user.id,
+                            name: t.user.name || t.user.nama,
+                            email: t.user.email,
+                            alamat: t.user.address || t.user.alamat || "Alamat belum diatur",
+                            telepon: t.user.telepon || "-"
+                        });
+                    }
+                });
+                setPelanggan(Array.from(usersMap.values()));
+            }
+        } catch {
+            toast.error("Gagal sinkronisasi data dari dashboard");
         }
+    }, [])
 
-        if (name) setManagerName(name)
-        fetchPelanggan()
-    }, [router])
-
-    const fetchPelanggan = async () => {
+    const fetchPelanggan = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get("/manager/users");
@@ -91,32 +102,21 @@ export default function DaftarPelangganManager() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [fetchFallbackFromDashboard])
 
-    const fetchFallbackFromDashboard = async () => {
-        try {
-            const res = await api.get("/manager/dashboard")
-            const data = res.data
-            if (data.status && Array.isArray(data.data)) {
-                // Mengambil user unik dari data transaksi dashboard
-                const usersMap = new Map();
-                data.data.forEach((t: ITransactionData) => {
-                    if (t.user && !usersMap.has(t.user.id)) {
-                        usersMap.set(t.user.id, {
-                            id: t.user.id,
-                            name: t.user.name || t.user.nama,
-                            email: t.user.email,
-                            alamat: t.user.address || t.user.alamat || "Alamat belum diatur",
-                            telepon: t.user.telepon || "-"
-                        });
-                    }
-                });
-                setPelanggan(Array.from(usersMap.values()));
-            }
-        } catch (err) {
-            toast.error("Gagal sinkronisasi data dari dashboard");
+    useEffect(() => {
+        const token = getAuthToken()
+        const role = getUserRole()
+        const name = localStorage.getItem("name")
+
+        if (!token || role !== "MANAGER") {
+            router.replace("/login")
+            return
         }
-    }
+
+        if (name) setManagerName(name)
+        fetchPelanggan()
+    }, [router, fetchPelanggan])
 
     const handleLogout = () => {
         removeAuthToken()
@@ -140,6 +140,7 @@ export default function DaftarPelangganManager() {
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
                 onLogout={handleLogout} 
+                activePage="pelanggan"
             />
 
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all duration-300 overflow-hidden">

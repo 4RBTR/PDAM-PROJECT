@@ -1,22 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
-import { getAuthToken, getUserRole, getUserId } from "@/utils/cookies"
+import { getUserRole } from "@/utils/cookies"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
 import { 
     Menu, 
-    Droplets, 
     UserPlus, 
     CheckCircle, 
     ChevronRight, 
     Calculator,
     Info
 } from "lucide-react"
+import Image from "next/image"
 
 interface Pelanggan {
     id: string
@@ -47,7 +46,7 @@ export default function KasirDashboard() {
         try {
             const res = await api.get("/users/pelanggan")
             if (res.data.status) setPelanggan(res.data.data)
-        } catch (error) {
+        } catch {
             toast.error("Gagal memuat data pelanggan")
         }
     }, [])
@@ -79,9 +78,10 @@ export default function KasirDashboard() {
             } else {
                 toast.error(res.data.message)
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
             toast.dismiss(loadingToast)
-            toast.error(error.response?.data?.message || "Error koneksi server")
+            toast.error(err.response?.data?.message || "Error koneksi server")
         }
     }
 
@@ -124,9 +124,11 @@ export default function KasirDashboard() {
                     <div className="flex items-center gap-4">
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {authUser?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={authUser.profile_picture} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (

@@ -9,7 +9,7 @@ export async function GET() {
       orderBy: { name: "asc" },
     });
     return NextResponse.json({ status: true, data });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { status: false, message: "Gagal mengambil data pelanggan" },
       { status: 500 }

@@ -15,7 +15,6 @@ import {
     Search, 
     Clock, 
     AlertCircle,
-    ChevronRight,
     Trash2
 } from "lucide-react"
 
@@ -29,6 +28,13 @@ interface ITagihanVerifikasi {
     status: string;
 }
 
+interface IUserProfile {
+    id: number;
+    name: string;
+    email: string;
+    profile_picture: string | null;
+}
+
 export default function VerifikasiPage() {
     // API_URL dimigrasikan ke lib/axios.ts
     const router = useRouter()
@@ -39,7 +45,7 @@ export default function VerifikasiPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [name, setName] = useState("Kasir")
-    const [kasirProfile, setKasirProfile] = useState<any>(null)
+    const [kasirProfile, setKasirProfile] = useState<IUserProfile | null>(null)
 
     // --- STATE MODAL & PROSES ---
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -179,9 +185,11 @@ export default function VerifikasiPage() {
                         </div>
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {kasirProfile?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={kasirProfile.profile_picture.startsWith('http') ? kasirProfile.profile_picture : `/api/uploads/${kasirProfile.profile_picture}`} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -286,6 +294,10 @@ export default function VerifikasiPage() {
                             ))}
                         </div>
                     )}
+                    
+                    <div className="text-center mt-12 text-slate-400 dark:text-slate-500 text-sm font-medium">
+                        <p>&copy; {new Date().getFullYear()} Hydro-FlowSystems.</p>
+                    </div>
                 </div>
             </main>
 

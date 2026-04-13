@@ -17,7 +17,7 @@ export async function PUT(
       status: true,
       message: "Status & Tanggapan diperbarui",
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { status: false, message: "Gagal update" },
       { status: 500 }
@@ -36,7 +36,7 @@ export async function DELETE(
       status: true,
       message: "Pesan berhasil dihapus permanen",
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { status: false, message: "Gagal menghapus pesan" },
       { status: 500 }

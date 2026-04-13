@@ -4,12 +4,13 @@ import { useState, useEffect } from "react"
 import toast from "react-hot-toast"
 import { 
     User, Mail, Phone, MapPin, Lock, 
-    Camera, Save, Loader2, ArrowLeft 
+    Camera, Save, Loader2 
 } from "lucide-react"
+import Image from "next/image"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
 
 export default function ProfileContent({ role }: { role: string }) {
     const { user: authUser, refreshUser } = useAuth()
@@ -91,8 +92,9 @@ export default function ProfileContent({ role }: { role: string }) {
             } else {
                 toast.error(res.data.message || "Gagal memperbarui profil")
             }
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Terjadi kesalahan koneksi")
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            toast.error(err.response?.data?.message || "Terjadi kesalahan koneksi")
         } finally {
             setSaving(false)
         }
@@ -126,7 +128,13 @@ export default function ProfileContent({ role }: { role: string }) {
                         <div className="relative mx-auto w-32 h-32 mb-6">
                             <div className="w-full h-full rounded-3xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
                                 {imagePreview ? (
-                                    <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+                                    <Image 
+                                        src={imagePreview} 
+                                        alt="Profile" 
+                                        width={128}
+                                        height={128}
+                                        className="w-full h-full object-cover" 
+                                    />
                                 ) : (
                                     <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                                         <User size={48} />

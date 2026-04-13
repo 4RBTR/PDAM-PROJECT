@@ -14,10 +14,11 @@ import {
     AreaChart, Area
 } from 'recharts'
 
-import { getAuthToken, getUserRole, getUserId, removeAuthToken } from "@/utils/cookies"
+import { getUserRole } from "@/utils/cookies"
 import SidebarManager from "@/components/Manager/SidebarManager"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
+import Image from "next/image"
 
 // API_URL dimigrasikan ke lib/axios.ts
 
@@ -100,9 +101,10 @@ export default function ManagerDashboard() {
             } else {
                 toast.error(res.data.message || "Gagal memuat data")
             }
-        } catch (error: any) {
-            console.error("Error:", error)
-            toast.error(error.response?.data?.message || "Gagal terhubung ke server.")
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            console.error("Error:", err)
+            toast.error(err.response?.data?.message || "Gagal terhubung ke server.")
         } finally {
             setLoading(false)
         }
@@ -208,9 +210,11 @@ export default function ManagerDashboard() {
                     <div className="flex items-center gap-4">
                         <div className="w-11 h-11 bg-linear-to-tr from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 ring-4 ring-white overflow-hidden relative">
                             {authUser?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={authUser.profile_picture} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -312,7 +316,7 @@ export default function ManagerDashboard() {
                                     <div className="bg-linear-to-br from-rose-400 to-rose-500 p-3.5 rounded-2xl text-white shadow-lg shadow-rose-200 dark:shadow-none">
                                         <TrendingUp size={24} strokeWidth={2} />
                                     </div>
-                                    <div className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-rose-100 dark:border-rose-800/50">
+                                    <div className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border border-rose-100 dark:border-rose-800/50">
                                         {stats?.transaksi_tunggakan || 0} Pending
                                     </div>
                                 </div>
@@ -579,6 +583,10 @@ export default function ManagerDashboard() {
                                 Next <ChevronRight size={16} />
                             </button>
                         </div>
+                    </div>
+                    
+                    <div className="text-center mt-12 mb-8 text-slate-400 dark:text-slate-500 text-sm font-medium">
+                        <p>&copy; {new Date().getFullYear()} Hydro-FlowSystems Executive.</p>
                     </div>
                 </div>
             </main>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import { getUserRole, removeAuthToken } from "@/utils/cookies"
+import { getUserRole } from "@/utils/cookies"
 import SidebarUser from "@/components/User/SidebarUser"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
@@ -16,11 +16,12 @@ import {
     Clock,
     Headphones,
     CheckCircle2,
-    UploadCloud,
     CreditCard,
-    Receipt,
-    ArrowRight
+    ArrowRight,
+    Eye
 } from "lucide-react"
+import Image from "next/image"
+import InvoiceModal from "@/components/User/InvoiceModal"
 
 // --- KONFIGURASI API ---
 // Dimigrasikan ke lib/axios.ts
@@ -36,13 +37,29 @@ interface ITagihan {
     bukti_bayar: string | null;
 }
 
-interface IUser {
-    name: string;
-    email: string;
-    address: string;
-    profile_picture?: string;
-    phone?: string;
-}
+// --- SKELETON COMPONENT ---
+const SkeletonCard = () => (
+    <div className="bg-white dark:bg-slate-900 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden animate-pulse mb-6">
+        <div className="flex flex-col lg:flex-row">
+            <div className="p-8 lg:p-10 flex-1 flex flex-col justify-center">
+                <div className="flex gap-4 mb-8">
+                    <div className="bg-slate-100 dark:bg-slate-800 h-8 w-32 rounded-xl"></div>
+                    <div className="bg-slate-100 dark:bg-slate-800 h-8 w-24 rounded-xl"></div>
+                </div>
+                <div className="space-y-4">
+                    <div className="bg-slate-100 dark:bg-slate-800 h-4 w-20 rounded"></div>
+                    <div className="bg-slate-100 dark:bg-slate-800 h-12 w-64 rounded-2xl"></div>
+                </div>
+            </div>
+            <div className="p-8 lg:w-96 bg-slate-50/50 dark:bg-slate-800/20 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 flex flex-col justify-center">
+                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full mx-auto mb-4"></div>
+                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-full"></div>
+            </div>
+        </div>
+    </div>
+)
+
+// User type is provided by AuthContext
 
 export default function UserDashboard() {
     const { user: authUser, logout } = useAuth()
@@ -50,20 +67,26 @@ export default function UserDashboard() {
     const [tagihan, setTagihan] = useState<ITagihan[]>([])
     // profile and name are now managed by AuthContext
     const [userId, setUserId] = useState<string>("")
+    const [greeting, setGreeting] = useState("")
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [uploadingId, setUploadingId] = useState<number | null>(null)
-    const [greeting, setGreeting] = useState("")
+    const [selectedTagihan, setSelectedTagihan] = useState<ITagihan | null>(null)
+    const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
+    const [loading, setLoading] = useState(true)
 
     const router = useRouter()
 
     // --- LOGIC FETCH DATA ---
     const ambilData = useCallback(async () => {
         if (!authUser?.id) return
+        setLoading(true)
         try {
             const resT = await api.get(`/tagihan/${authUser.id}`)
             if (resT.data.status) setTagihan(resT.data.data)
         } catch {
             console.error("Error fetching data")
+        } finally {
+            setLoading(false)
         }
     }, [authUser])
 
@@ -112,16 +135,15 @@ export default function UserDashboard() {
             } else {
                 toast.error("Gagal: " + res.data.message)
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
             toast.dismiss(loadingToast)
-            toast.error(error.response?.data?.message || "Kesalahan koneksi.")
+            toast.error(err.response?.data?.message || "Kesalahan koneksi.")
         }
     }
 
     const handleLogout = () => {
-        removeAuthToken()
-        toast.success("Berhasil keluar")
-        router.push("/")
+        logout()
     }
 
     const totalTagihan = tagihan.length
@@ -162,9 +184,11 @@ export default function UserDashboard() {
                         </button>
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {authUser?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={authUser.profile_picture} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -174,43 +198,57 @@ export default function UserDashboard() {
                     </div>
                 </header>
 
-                <div className="p-6 lg:p-10 max-w-6xl mx-auto w-full space-y-10">
+                <div className="p-4 md:p-6 lg:p-10 max-w-6xl mx-auto w-full space-y-5 md:space-y-10">
 
-                    {/* 1. HERO BANNER */}
-                    <div className="bg-[#0A0F2C] rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-blue-900/10 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-8 print:shadow-none print:border print:bg-none print:text-black">
-                        {/* Efek Cahaya Abstract (Glowing Orbs) */}
-                        <div className="absolute top-0 right-0 w-125 h-125 bg-linear-to-br from-blue-600/40 to-indigo-600/40 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 w-75 h-75 bg-blue-400/20 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+                    {/* 1. HERO BANNER - MOBILE (LIGHT) & DESKTOP (PREMIUM) */}
+                    {/* MOBILE HERO: Ultra-clean, high performance */}
+                    <div className="lg:hidden bg-[#0A0F2C] rounded-3xl p-5 shadow-lg relative overflow-hidden flex flex-row items-center justify-between gap-4">
+                        <div className="relative z-10 flex-1 min-w-0">
+                            <p className="text-blue-400/80 text-[8px] font-black uppercase tracking-[0.2em] mb-1">{greeting}</p>
+                            <h2 className="text-xl font-black text-white truncate leading-tight uppercase font-heading">{authUser?.name?.split(' ')[0] || "User"}</h2>
+                            <div className="flex items-center gap-2 text-blue-200/40 text-[9px] font-bold mt-1">
+                                <MapPin size={10} className="shrink-0" />
+                                <span className="truncate">{authUser?.address || "Alamat..."}</span>
+                            </div>
+                        </div>
+                        <div className="relative z-10 bg-white/5 border border-white/10 px-4 py-2.5 rounded-2xl text-center">
+                            <p className="text-[7px] font-black text-blue-400 uppercase tracking-widest mb-0.5">ID PELANGGAN</p>
+                            <p className="text-lg font-mono font-black text-white tracking-widest leading-none">
+                                <span className="text-blue-500 text-sm mr-0.5">#</span>{String(userId || '').padStart(5, '0')}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* DESKTOP HERO: Full premium experience */}
+                    <div className="hidden lg:flex bg-[#0A0F2C] rounded-[2.5rem] p-12 shadow-2xl shadow-blue-900/10 relative overflow-hidden flex-row justify-between items-center gap-8 print:shadow-none print:border print:bg-none print:text-black">
+                        {/* Reduced blur radius for faster rendering */}
+                        <div className="absolute top-0 right-0 w-125 h-125 bg-linear-to-br from-blue-600/30 to-indigo-600/30 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
 
                         <div className="relative z-10 text-white w-full md:w-auto">
                             <p className="text-blue-200/60 font-black uppercase tracking-[0.3em] text-[10px] mb-4">
                                 {greeting} 👋
                             </p>
-                            <h2 className="text-4xl md:text-6xl font-black capitalize mb-8 tracking-tighter leading-none">{authUser?.name || "Pelanggan"}</h2>
+                            <h2 className="text-6xl font-black capitalize mb-8 tracking-tighter leading-none">{authUser?.name || "Pelanggan"}</h2>
                             
                             <div className="flex flex-wrap gap-4">
                                 <div className="inline-flex items-center gap-3 text-xs bg-white/10 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/10 shadow-inner group/addr">
-                                    <div className="p-2 bg-blue-500/20 rounded-xl group-hover/addr:bg-blue-500/40 transition-colors">
-                                        <MapPin size={14} className="text-blue-400 shrink-0" />
-                                    </div>
+                                    <MapPin size={14} className="text-blue-400 shrink-0" />
                                     <span className="font-bold text-blue-50 max-w-[200px] truncate">{authUser?.address || "Memuat alamat..."}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-3 text-xs bg-white/10 backdrop-blur-xl px-5 py-3.5 rounded-2xl border border-white/10 shadow-inner group/role">
-                                    <div className="p-2 bg-emerald-500/20 rounded-xl group-hover/role:bg-emerald-500/40 transition-colors">
-                                        <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                                    </div>
+                                    <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
                                     <span className="font-bold text-emerald-50">Pelanggan Aktif</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* ID Card Wrapper */}
-                        <div className="relative z-10 w-full md:w-auto bg-linear-to-b from-white/10 to-white/5 backdrop-blur-2xl p-6 rounded-4xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]">
-                            <div className="flex flex-col items-start md:items-end">
-                                <p className="text-[11px] font-black text-blue-300/80 uppercase tracking-[0.2em] mb-2">ID Pelanggan</p>
-                                <div className="flex items-center gap-3">
+                        {/* ID Pelanggan Wrapper */}
+                        <div className="relative z-10 w-[280px] bg-white/5 backdrop-blur-2xl p-8 rounded-4xl border border-white/10">
+                            <div className="flex flex-col items-end justify-center">
+                                <p className="text-[11px] font-black text-blue-300/80 uppercase tracking-[0.2em] mb-3">ID Pelanggan</p>
+                                <div className="flex items-center gap-3 text-white">
                                     <span className="text-blue-400 font-black text-2xl">#</span>
-                                    <p className="text-4xl font-mono font-black text-white tracking-widest">{String(userId || '').padStart(5, '0')}</p>
+                                    <p className="text-5xl font-mono font-black tracking-[0.15em] leading-none">{String(userId || '').padStart(5, '0')}</p>
                                 </div>
                             </div>
                         </div>
@@ -280,119 +318,70 @@ export default function UserDashboard() {
 
                     {/* 3. LIST TAGIHAN */}
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                <Receipt size={20} strokeWidth={2.5} />
+                        {/* HISTORY PEMBAYARAN - Optimized Mobile & Desktop */}
+                        {loading ? (
+                            <div className="space-y-4">
+                                <SkeletonCard />
+                                <SkeletonCard />
                             </div>
-                            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Riwayat Pembayaran</h3>
-                        </div>
-
-                        {tagihan.length === 0 ? (
-                            <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-16 text-center shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-none">
-                                <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-500">
-                                    <CheckCircle2 size={48} strokeWidth={1.5} />
-                                </div>
-                                <h4 className="font-black text-2xl text-slate-800 dark:text-slate-100 mb-2">Semua Lunas!</h4>
-                                <p className="text-slate-500 dark:text-slate-400">Tidak ada tagihan yang perlu dibayar saat ini.</p>
+                        ) : tagihan.length === 0 ? (
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-dashed border-slate-200">
+                                <h4 className="font-black text-lg text-slate-800 dark:text-slate-100">Belum Ada Tagihan</h4>
                             </div>
                         ) : (
-                            <div className="grid gap-6">
-                                {tagihan.map((t, i) => (
-                                    <div key={i} className="group bg-white dark:bg-slate-900 rounded-4xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100/60 dark:border-slate-800 hover:shadow-lg transition-all duration-300 overflow-hidden print:break-inside-avoid flex flex-col lg:flex-row">
-
-                                        {/* DETAIL KIRI (INFO TAGIHAN) */}
-                                        <div className="p-8 lg:p-10 flex-1 flex flex-col justify-center">
-                                            {/* Header Info: Bulan & Status */}
-                                            <div className="flex flex-wrap items-center gap-4 mb-8">
-                                                <div className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 px-5 py-2 rounded-xl text-sm font-black uppercase tracking-widest border border-slate-100 dark:border-slate-700">
-                                                    {t.bulan} {t.tahun}
-                                                </div>
-                                                {t.status_bayar === "LUNAS" && <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/30 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-800/50"><CheckCircle2 size={16} /> LUNAS</span>}
-                                                {t.status_bayar === "MENUNGGU_VERIFIKASI" && <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 text-xs font-bold bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-xl border border-amber-100 dark:border-amber-800/50"><Clock size={16} /> DIPROSES</span>}
-                                                {t.status_bayar === "BELUM_BAYAR" && <span className="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 text-xs font-bold bg-rose-50 dark:bg-rose-900/30 px-4 py-2 rounded-xl border border-rose-100 dark:border-rose-800/50"><AlertCircle size={16} /> TERTUNGGAK</span>}
-                                            </div>
-
-                                            {/* Nominal & Meteran */}
-                                            <div className="flex flex-col sm:flex-row sm:items-end gap-8 sm:gap-16">
-                                                <div>
-                                                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest mb-2">Total Tagihan</p>
-                                                    <h4 className="text-4xl sm:text-5xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Rp {t.total_bayar.toLocaleString('id-ID')}</h4>
+                            <div className="space-y-4 md:space-y-8">
+                                {tagihan.map((t) => (
+                                    <div key={t.id} className="group overflow-hidden rounded-3xl md:rounded-4xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 hover:shadow-xl dark:hover:border-blue-500/30">
+                                        <div className="flex flex-col lg:flex-row">
+                                            {/* LEFT SIDE: Info */}
+                                            <div className="flex-1 p-5 md:p-10 flex flex-col justify-center">
+                                                <div className="flex items-center gap-3 mb-6 md:mb-8">
+                                                    <div className="text-[10px] font-black bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg uppercase tracking-widest">{t.bulan} {t.tahun}</div>
+                                                    <div className={`text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest flex items-center gap-1.5
+                                                        ${t.status_bayar === "LUNAS" ? "bg-emerald-50 text-emerald-600" : t.status_bayar === "BELUM_BAYAR" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"}
+                                                    `}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${t.status_bayar === "LUNAS" ? "bg-emerald-600" : t.status_bayar === "BELUM_BAYAR" ? "bg-rose-600" : "bg-amber-600"}`}></div>
+                                                        {t.status_bayar}
+                                                    </div>
                                                 </div>
 
-                                                <div className="bg-slate-50/80 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 inline-block">
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest mb-2">Pemakaian Air</p>
-                                                    <div className="flex items-center gap-3 text-base font-bold">
-                                                        <span className="text-slate-500 dark:text-slate-300">{t.meter_awal}</span>
-                                                        <ArrowRight size={16} className="text-slate-300 dark:text-slate-600" />
-                                                        <span className="text-blue-600 dark:text-blue-400">{t.meter_akhir}</span>
-                                                        <span className="bg-blue-100/50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-sm ml-2">
-                                                            {t.meter_akhir - t.meter_awal} m³
-                                                        </span>
+                                                <div className="flex flex-row items-end justify-between md:justify-start md:gap-16">
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400 font-black uppercase mb-1 tracking-widest">Total Tagihan</p>
+                                                        <h4 className="text-2xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Rp {t.total_bayar.toLocaleString('id-ID')}</h4>
+                                                    </div>
+                                                    <div className="hidden sm:block opacity-60">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Meter</p>
+                                                        <p className="text-xs font-bold">{t.meter_akhir - t.meter_awal} m³</p>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* KOLOM KANAN (AKSI / STATUS BESAR) */}
-                                        <div className="p-8 lg:w-96 bg-slate-50/50 dark:bg-slate-800/20 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 flex flex-col justify-center print:hidden">
-                                            {t.status_bayar === "LUNAS" ? (
-                                                <div className="text-center py-4">
-                                                    <div className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                        <CheckCircle2 size={40} strokeWidth={2.5} />
+                                            {/* RIGHT SIDE: Action */}
+                                            <div className="p-5 md:p-10 md:w-80 bg-slate-50/50 dark:bg-slate-800/20 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 flex items-center print:hidden">
+                                                {t.status_bayar === "LUNAS" ? (
+                                                    <button onClick={() => { setSelectedTagihan(t); setIsInvoiceOpen(true); }} className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all">
+                                                        <Eye size={16} /> Lihat Invoce
+                                                    </button>
+                                                ) : t.status_bayar === "MENUNGGU_VERIFIKASI" ? (
+                                                    <div className="w-full text-center text-[11px] font-black text-amber-600/70 uppercase tracking-widest italic">
+                                                        Sedang Diverifikasi
                                                     </div>
-                                                    <p className="text-lg font-black text-emerald-700 mb-1">Pembayaran Selesai</p>
-                                                    <p className="text-sm font-medium text-emerald-600/70">Terima kasih atas pembayaran Anda.</p>
-                                                </div>
-                                            ) : t.status_bayar === "MENUNGGU_VERIFIKASI" ? (
-                                                <div className="text-center py-4">
-                                                    <div className="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                                                        <Clock size={40} strokeWidth={2.5} />
+                                                ) : (
+                                                    <div className="w-full space-y-3">
+                                                        {uploadingId === t.id ? (
+                                                            <div className="flex gap-2">
+                                                                <button onClick={() => setUploadingId(null)} className="flex-1 py-3 text-xs font-bold text-slate-400">Batal</button>
+                                                                <button onClick={() => handleUpload(t.id)} className="flex-2 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase">Kirim Bukti</button>
+                                                            </div>
+                                                        ) : (
+                                                            <button onClick={() => setUploadingId(t.id)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
+                                                                <CreditCard size={18} /> Bayar Tagihan
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                    <p className="text-lg font-black text-amber-700 mb-1">Sedang Diverifikasi</p>
-                                                    <p className="text-sm font-medium text-amber-600/70">Admin sedang mengecek dana Anda.</p>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    {uploadingId === t.id ? (
-                                                        <div className="animate-in fade-in duration-300 w-full">
-                                                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">Upload Bukti Transfer</p>
-
-                                                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-200 dark:border-blue-900/50 border-dashed rounded-2xl cursor-pointer bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 transition-all mb-4 relative overflow-hidden group">
-                                                                {selectedFile ? (
-                                                                    <div className="text-center p-4">
-                                                                        <CheckCircle2 className="text-blue-500 dark:text-blue-400 mx-auto mb-2" size={32} />
-                                                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300 block truncate max-w-50">{selectedFile.name}</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="flex flex-col items-center justify-center p-4">
-                                                                        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/40 text-blue-500 dark:text-blue-400 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                                                            <UploadCloud size={24} />
-                                                                        </div>
-                                                                        <p className="text-xs font-bold text-slate-500">Pilih dari galeri</p>
-                                                                    </div>
-                                                                )}
-                                                                <input type="file" className="hidden" accept="image/*" onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} />
-                                                            </label>
-
-                                                            <div className="flex gap-3">
-                                                                <button onClick={() => { setUploadingId(null); setSelectedFile(null); }} className="flex-1 py-3.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 transition-all flex justify-center items-center">
-                                                                    Batal
-                                                                </button>
-                                                                <button onClick={() => handleUpload(t.id)} className="flex-1 py-3.5 rounded-xl text-sm font-black text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-[0_8px_20px_-6px_rgba(37,99,235,0.4)] dark:shadow-none transition-all active:scale-95 flex justify-center items-center gap-2">
-                                                                    Kirim <ArrowRight size={16} />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <button onClick={() => setUploadingId(t.id)} className="w-full py-8 flex flex-col items-center justify-center gap-4 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-3xl transition-all shadow-[0_15px_30px_-10px_rgba(0,0,0,0.3)] dark:shadow-none active:scale-95 group/btn">
-                                                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center group-hover/btn:scale-110 group-hover/btn:bg-blue-500/20 transition-all duration-300">
-                                                                <CreditCard size={32} className="group-hover/btn:text-blue-400 transition-colors" />
-                                                            </div>
-                                                            <span className="font-black text-sm uppercase tracking-widest text-slate-300 group-hover/btn:text-white transition-colors">Bayar Sekarang</span>
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -406,6 +395,20 @@ export default function UserDashboard() {
                     </div>
                 </div>
             </main>
+
+            {/* MODAL INVOICE */}
+            {selectedTagihan && (
+                <InvoiceModal 
+                    isOpen={isInvoiceOpen}
+                    onClose={() => setIsInvoiceOpen(false)}
+                    data={selectedTagihan}
+                    user={{
+                        name: authUser?.name || "Pelanggan",
+                        address: authUser?.address || "Alamat tidak tersedia",
+                        id: userId
+                    }}
+                />
+            )}
         </div>
     )
 }

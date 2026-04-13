@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import {
     LayoutDashboard,
@@ -8,8 +9,7 @@ import {
     LogOut,
     X,
     Droplets,
-    Users,
-    Smartphone
+    Users
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -113,9 +113,15 @@ export default function SidebarUser({ isOpen, onClose, onLogout }: SidebarProps)
                         onClick={() => { if (window.innerWidth < 1024) onClose(); }}
                         className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700/50 group"
                     >
-                        <div className="w-10 h-10 bg-linear-to-tr from-blue-600 to-blue-400 rounded-xl flex items-center justify-center text-white font-black overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform group-hover:scale-105">
+                        <div className="w-10 h-10 bg-linear-to-tr from-blue-600 to-blue-400 rounded-xl flex items-center justify-center text-white font-black overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform group-hover:scale-105 relative">
                             {user?.profile_picture ? (
-                                <img src={user.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
+                                <Image
+                                    src={user.profile_picture}
+                                    alt="Avatar"
+                                    width={40}
+                                    height={40}
+                                    className="w-full h-full object-cover"
+                                />
                             ) : (
                                 (user?.name || "U").charAt(0).toUpperCase()
                             )}

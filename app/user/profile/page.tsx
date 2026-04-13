@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import SidebarUser from "@/components/User/SidebarUser"
 import ProfileContent from "@/components/Profile/ProfileContent"
-import { getAuthToken, removeAuthToken } from "@/utils/cookies"
+import { getAuthToken } from "@/utils/cookies"
+import { useAuth } from "@/context/AuthContext"
 import { Menu } from "lucide-react"
 
 export default function UserProfilePage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const { logout } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
@@ -21,7 +23,7 @@ export default function UserProfilePage() {
             <SidebarUser 
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
-                onLogout={() => { removeAuthToken(); router.push("/"); }} 
+                onLogout={logout} 
             />
 
             <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 lg:ml-72 pb-24">
@@ -33,6 +35,10 @@ export default function UserProfilePage() {
                 </header>
 
                 <ProfileContent role="Pelanggan" />
+                
+                <div className="text-center mt-auto py-8 text-slate-400 dark:text-slate-500 text-sm font-medium">
+                    <p>&copy; {new Date().getFullYear()} Hydro-FlowSystems.</p>
+                </div>
             </main>
         </div>
     )

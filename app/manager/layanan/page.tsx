@@ -8,10 +8,19 @@ import { getAuthToken, getUserRole, getUserId, removeAuthToken } from "@/utils/c
 import api from "@/lib/axios"
 import { 
     Search, Clock, CheckCircle, XCircle, 
-    RefreshCw, Phone, User as UserIcon, Menu
+    RefreshCw, User as UserIcon, Menu
 } from "lucide-react"
+import Image from "next/image"
 
 // API_URL dimigrasikan ke lib/axios.ts
+
+interface IUserProfile {
+    id: number;
+    name: string;
+    email: string;
+    profile_picture?: string;
+    role: string;
+}
 
 interface ILayanan {
     id: number
@@ -32,7 +41,7 @@ export default function ManagerLayananPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [filterStatus, setFilterStatus] = useState("ALL")
     const [managerName, setManagerName] = useState("Manager")
-    const [managerProfile, setManagerProfile] = useState<any>(null)
+    const [managerProfile, setManagerProfile] = useState<IUserProfile | null>(null)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
     const router = useRouter()
@@ -110,9 +119,11 @@ export default function ManagerLayananPage() {
                     <div className="flex items-center gap-4">
                         <div className="w-11 h-11 bg-linear-to-tr from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 ring-4 ring-white overflow-hidden relative">
                             {managerProfile?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={managerProfile.profile_picture.startsWith('http') ? managerProfile.profile_picture : `/api/uploads/${managerProfile.profile_picture}`} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (

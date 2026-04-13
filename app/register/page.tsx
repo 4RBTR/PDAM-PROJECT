@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client"
 
 import { useState } from 'react'
@@ -6,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import api from '@/lib/axios'
+import Image from 'next/image'
 
 export default function RegisterPage() {
     const [form, setForm] = useState({
@@ -49,9 +49,10 @@ export default function RegisterPage() {
             } else {
                 toast.error(data.message || "Gagal mendaftar")
             }
-        } catch (error: any) {
-            console.error(error)
-            toast.error(error.response?.data?.message || "Terjadi kesalahan koneksi")
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            console.error(err)
+            toast.error(err.response?.data?.message || "Terjadi kesalahan koneksi")
         } finally {
             setLoading(false)
         }
@@ -63,9 +64,11 @@ export default function RegisterPage() {
             {/* Bagian Kiri - Gambar Cover */}
             <div className="hidden lg:block lg:w-1/2 relative bg-slate-900 dark:bg-slate-950">
                 {/* Gambar Tetesan Air / Clean Water dari Unsplash */}
-                <img
+                <Image
                     src="https://images.unsplash.com/photo-1590556308338-2f28ba117711?q=80&w=764&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                     alt="PDAM Water Registration"
+                    fill
+                    priority
                     className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-screen"
                 />
                 <div className="absolute inset-0 bg-linear-to-tr from-blue-900/90 via-transparent to-transparent"></div>

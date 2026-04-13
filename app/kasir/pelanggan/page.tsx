@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
-import { getAuthToken, getUserRole } from "@/utils/cookies"
+import { getUserRole } from "@/utils/cookies"
 import api from "@/lib/axios"
+import { useAuth } from "@/context/AuthContext"
 import {
     Users, Search, UserPlus, Edit3, Trash2,
     MapPin, RefreshCw, X, Eye, Phone
 } from "lucide-react"
+import Image from "next/image"
 
 interface Pelanggan {
     id: number
@@ -21,11 +23,11 @@ interface Pelanggan {
 }
 
 export default function KelolaPelangganPage() {
+    const { user: authUser, logout } = useAuth()
     const [pelanggan, setPelanggan] = useState<Pelanggan[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-    const [kasirName, setKasirName] = useState("")
 
     // State untuk Form (Tambah/Edit)
     const [showForm, setShowForm] = useState(false)
@@ -56,13 +58,11 @@ export default function KelolaPelangganPage() {
     }, [])
 
     useEffect(() => {
-        const token = getAuthToken()
         const role = getUserRole()
-        if (!token || role !== "KASIR") {
+        if (role !== "KASIR") {
             router.push("/login")
             return
         }
-        setKasirName(localStorage.getItem("name") || "Kasir")
         fetchPelanggan()
     }, [router, fetchPelanggan])
 
@@ -183,7 +183,7 @@ export default function KelolaPelangganPage() {
             <SidebarKasir
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                onLogout={() => router.push('/')}
+                onLogout={logout}
             />
 
             {/* MAIN CONTENT AREA */}
@@ -211,8 +211,18 @@ export default function KelolaPelangganPage() {
                         >
                             <UserPlus size={18} /> Tambah Pelanggan
                         </button>
-                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white">
-                            {kasirName.charAt(0).toUpperCase()}
+                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
+                            {authUser?.profile_picture ? (
+                                <Image 
+                                    src={authUser.profile_picture} 
+                                    alt="Profile" 
+                                    width={44}
+                                    height={44}
+                                    className="w-full h-full object-cover" 
+                                />
+                            ) : (
+                                (authUser?.name || "K").charAt(0).toUpperCase()
+                            )}
                         </div>
                     </div>
                 </header>
@@ -283,8 +293,14 @@ export default function KelolaPelangganPage() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
                                                         {p.profile_picture ? (
-                                                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-                                                                <img src={p.profile_picture.startsWith('http') ? p.profile_picture : `/api/uploads/${p.profile_picture}`} alt={p.name} className="w-full h-full object-cover" />
+                                                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 relative">
+                                                                <Image 
+                                                                    src={p.profile_picture.startsWith('http') ? p.profile_picture : `/api/uploads/${p.profile_picture}`} 
+                                                                    alt={p.name} 
+                                                                    width={40}
+                                                                    height={40}
+                                                                    className="w-full h-full object-cover" 
+                                                                />
                                                             </div>
                                                         ) : (
                                                             <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm">
@@ -343,7 +359,13 @@ export default function KelolaPelangganPage() {
                             <div className="flex items-center gap-4">
                                 <div className="relative group w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center">
                                     {imagePreview ? (
-                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                        <Image 
+                                            src={imagePreview} 
+                                            alt="Preview" 
+                                            width={80}
+                                            height={80}
+                                            className="w-full h-full object-cover" 
+                                        />
                                     ) : (
                                         <UserPlus size={24} className="text-slate-400" />
                                     )}
@@ -417,9 +439,15 @@ export default function KelolaPelangganPage() {
 
                         <div className="p-8">
                             <div className="flex flex-col items-center mb-8">
-                                <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-xl mb-4">
+                                <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-slate-50 dark:border-slate-800 shadow-xl mb-4 relative">
                                     {selectedPelanggan.profile_picture ? (
-                                        <img src={selectedPelanggan.profile_picture.startsWith('http') ? selectedPelanggan.profile_picture : `/api/uploads/${selectedPelanggan.profile_picture}`} alt={selectedPelanggan.name} className="w-full h-full object-cover" />
+                                        <Image 
+                                            src={selectedPelanggan.profile_picture.startsWith('http') ? selectedPelanggan.profile_picture : `/api/uploads/${selectedPelanggan.profile_picture}`} 
+                                            alt={selectedPelanggan.name} 
+                                            width={128}
+                                            height={128}
+                                            className="w-full h-full object-cover" 
+                                        />
                                     ) : (
                                         <div className="w-full h-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-4xl">
                                             {selectedPelanggan.name.charAt(0).toUpperCase()}

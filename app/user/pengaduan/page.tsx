@@ -4,9 +4,10 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
-import { getAuthToken, getUserRole, getUserId, getUserName, removeAuthToken } from "@/utils/cookies"
+import { getUserRole, getUserId, getAuthToken } from "@/utils/cookies"
 import SidebarUser from "@/components/User/SidebarUser"
 import api from "@/lib/axios"
+import { useAuth } from "@/context/AuthContext"
 import {
     Menu,
     MessageSquarePlus,
@@ -20,6 +21,7 @@ import {
     AlertCircle,
     UploadCloud
 } from "lucide-react"
+import Image from "next/image"
 
 // --- INTERFACES ---
 interface IPengaduan {
@@ -33,6 +35,7 @@ interface IPengaduan {
 }
 
 export default function UserPengaduan() {
+    const { user: authUser, logout } = useAuth()
     // API_URL dimigrasikan ke lib/axios.ts
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -41,15 +44,13 @@ export default function UserPengaduan() {
     const [deskripsi, setDeskripsi] = useState("")
     const [foto, setFoto] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
-    const [userName, setUserName] = useState("")
 
     const router = useRouter()
 
     // --- FETCH DATA RIWAYAT ---
     const ambilData = useCallback(async () => {
         const id = getUserId()
-        const token = getAuthToken()
-        if (!id || !token) return
+        if (!id) return
 
         try {
             const res = await api.get(`/pengaduan/user/${id}`)
@@ -59,24 +60,22 @@ export default function UserPengaduan() {
                 // Reverse agar laporan terbaru ada di atas
                 setRiwayat(data.data.reverse())
             }
-        } catch (error) {
+        } catch {
             toast.error("Gagal terhubung ke server")
         }
     }, [])
 
     // --- CEK AUTH ---
     useEffect(() => {
-        const token = getAuthToken()
         const role = getUserRole()
 
-        if (!token) {
+        if (!getUserId()) {
             router.push("/login")
             return
         }
         if (role === "MANAGER") router.push("/manager/dashboard")
         if (role === "KASIR") router.push("/kasir/dashboard")
 
-        setUserName(getUserName() || "Pelanggan")
         ambilData()
     }, [router, ambilData])
 
@@ -86,7 +85,6 @@ export default function UserPengaduan() {
 
         if (!judul || !deskripsi) return toast.error("Judul dan Deskripsi wajib diisi")
 
-        const token = getAuthToken()
         const id = getUserId()
         const loadingToast = toast.loading("Mengirim laporan...")
         setLoading(true)
@@ -113,7 +111,7 @@ export default function UserPengaduan() {
             } else {
                 toast.error(data.message || "Gagal mengirim")
             }
-        } catch (error) {
+        } catch {
             toast.dismiss(loadingToast)
             toast.error("Terjadi kesalahan sistem")
         } finally {
@@ -123,7 +121,6 @@ export default function UserPengaduan() {
 
     // --- HANDLE HAPUS ---
     const executeHapus = async (id: number) => {
-        const token = getAuthToken()
         const loadingToast = toast.loading("Sedang menghapus...")
 
         try {
@@ -136,7 +133,7 @@ export default function UserPengaduan() {
             } else {
                 toast.error(data.message || "Gagal menghapus", { id: loadingToast })
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan sistem", { id: loadingToast })
         }
     }
@@ -161,8 +158,7 @@ export default function UserPengaduan() {
     }
 
     const handleLogout = () => {
-        removeAuthToken()
-        router.push("/")
+        logout()
     }
 
     return (
@@ -197,11 +193,21 @@ export default function UserPengaduan() {
                         </button>
                         <div>
                             <h1 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Layanan Pengaduan</h1>
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1.5">Pusat Bantuan PDAM</p>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1.5">Pusat Bantuan Hydro-FlowSystems</p>
                         </div>
                     </div>
-                    <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white">
-                        {userName.charAt(0).toUpperCase()}
+                    <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
+                        {authUser?.profile_picture ? (
+                            <Image 
+                                src={authUser.profile_picture} 
+                                alt="Profile" 
+                                width={44}
+                                height={44}
+                                className="w-full h-full object-cover" 
+                            />
+                        ) : (
+                            (authUser?.name || "P").charAt(0).toUpperCase()
+                        )}
                     </div>
                 </header>
 
@@ -367,10 +373,11 @@ export default function UserPengaduan() {
                                                 {/* Jika ada foto bukti */}
                                                 {item.foto && (
                                                     <div className="w-full md:w-40 h-48 md:h-32 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative group/img">
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img
+                                                        <Image
                                                             src={item.foto.startsWith('http') ? item.foto : `/api/uploads/${item.foto}`}
                                                             alt="Bukti Pengaduan"
+                                                            width={160}
+                                                            height={128}
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
                                                         />
                                                         <a
@@ -410,8 +417,8 @@ export default function UserPengaduan() {
                     </div>
 
                     {/* FOOTER */}
-                    <div className="text-center mt-16 pt-8 text-slate-400 dark:text-slate-500 text-sm font-medium print:hidden">
-                        <p>&copy; {new Date().getFullYear()} PDAM Pintar.</p>
+                    <div className="text-center mt-16 pt-8 text-slate-400 dark:text-slate-500 text-sm font-medium print:hidden border-t border-slate-100 dark:border-slate-800">
+                        <p>&copy; {new Date().getFullYear()} Hydro-FlowSystems.</p>
                     </div>
                 </div>
             </main>

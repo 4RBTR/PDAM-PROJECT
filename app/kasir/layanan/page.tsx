@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
-import { getAuthToken, getUserRole } from "@/utils/cookies"
+import { getUserRole } from "@/utils/cookies"
 import { 
     Menu, Search, Clock, CheckCircle, XCircle, 
     RefreshCw, Phone, User,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
+import Image from "next/image"
 
 // API_BASE_URL dimigrasikan ke lib/axios.ts
 
@@ -72,9 +73,10 @@ export default function KasirLayananPage() {
             } else {
                 toast.error("Gagal update status")
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
             toast.dismiss(loadingToast)
-            toast.error(error.response?.data?.message || "Gagal koneksi")
+            toast.error(err.response?.data?.message || "Gagal koneksi")
         }
     }
 
@@ -90,9 +92,10 @@ export default function KasirLayananPage() {
             } else {
                 toast.error("Gagal menghapus data")
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
             toast.dismiss(loadingToast)
-            toast.error(error.response?.data?.message || "Gagal koneksi")
+            toast.error(err.response?.data?.message || "Gagal koneksi")
         }
     }
 
@@ -130,9 +133,11 @@ export default function KasirLayananPage() {
                     <div className="flex items-center gap-4">
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {authUser?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={authUser.profile_picture} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getAuthToken, getUserName, getUserRole } from '@/utils/cookies'
 
 export default function Home() {
@@ -18,8 +19,6 @@ export default function Home() {
       setUserRole(getUserRole() || "")
     }
   }, [])
-
-
 
   return (
     // WRAPPER UTAMA
@@ -64,7 +63,7 @@ export default function Home() {
 
 
             {/* Desktop Menu - Invisible Pill Style */}
-            <div className="hidden md: items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               {['About', 'Services', 'Contact'].map((item) => (
                 <Link
                   key={item}
@@ -102,7 +101,7 @@ export default function Home() {
 
               {/* Mobile Menu Toggle - Sleek Minimalist */}
               <button
-                className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-100/50"
+                className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-100/50 outline-none"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
                 <div className={`h-0.5 bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'w-5 rotate-45 translate-y-1' : 'w-5'}`}></div>
@@ -164,8 +163,15 @@ export default function Home() {
           {/* Social Proof */}
           <div className="pt-8 flex flex-col sm:flex-row items-center gap-5 text-sm text-slate-500 justify-center lg:justify-start animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
             <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`w-9 h-9 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center overflow-hidden shadow-md ring-1 ring-slate-100 bg-[url('https://i.pravatar.cc/100?img=${i + 15}')] bg-cover`}></div>
+              {[15, 16, 17, 18].map((imgIdx) => (
+                <div key={imgIdx} className="w-9 h-9 rounded-full border-2 border-white bg-slate-200 shadow-md ring-1 ring-slate-100 relative overflow-hidden">
+                    <Image 
+                        src={`https://i.pravatar.cc/100?img=${imgIdx}`}
+                        alt="User"
+                        fill
+                        className="object-cover"
+                    />
+                </div>
               ))}
               <div className="w-9 h-9 rounded-full border-2 border-white bg-slate-50 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-md ring-1 ring-slate-100">+2k</div>
             </div>
@@ -195,11 +201,16 @@ export default function Home() {
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dashboard</span>
                     <span className="text-sm font-bold text-slate-800">Halo, {isLoggedIn ? userName : "Budi Santoso"} 👋</span>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-sm overflow-hidden flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-sm overflow-hidden flex items-center justify-center relative">
                     {isLoggedIn ? (
                       <div className="w-full h-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{userName.charAt(0)}</div>
                     ) : (
-                      <img src="https://i.pravatar.cc/100?img=12" alt="Mock Avatar" className="w-full h-full object-cover" />
+                      <Image 
+                        src="https://i.pravatar.cc/100?img=12" 
+                        alt="Mock Avatar" 
+                        fill
+                        className="object-cover" 
+                      />
                     )}
                   </div>
                 </div>

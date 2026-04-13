@@ -41,6 +41,8 @@ model Tagihan {
   status_bayar String   @default("BELUM_BAYAR")
   bukti_bayar  String?
   createdAt    DateTime @default(now())
+
+  @@index([userId])
 }
 
 enum Role {

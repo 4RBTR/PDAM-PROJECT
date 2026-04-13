@@ -16,7 +16,7 @@ export async function DELETE(
       status: true,
       message: "Laporan berhasil dihapus dari riwayat",
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { status: false, message: "Gagal menghapus laporan" },
       { status: 500 }

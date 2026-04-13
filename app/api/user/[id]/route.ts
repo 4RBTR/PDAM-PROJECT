@@ -42,11 +42,12 @@ export async function PUT(
       message: "Data user berhasil diubah!",
       data: updatedUser,
     });
-  } catch (error: any) {
-    console.error("DEBUG: Update Profile Error:", error);
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string };
+    console.error("DEBUG: Update Profile Error:", err);
     
     let message = "Gagal mengubah data user.";
-    if (error.code === "P2002") {
+    if (err.code === "P2002") {
       message = "Email sudah digunakan oleh akun lain.";
     }
 
@@ -54,7 +55,7 @@ export async function PUT(
       {
         status: false,
         message: message,
-        error: process.env.NODE_ENV === "development" ? error.message : undefined
+        error: process.env.NODE_ENV === "development" ? err.message : undefined
       },
       { status: 500 }
     );

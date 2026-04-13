@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import {
@@ -94,21 +94,7 @@ export default function ManagerInbox() {
 
     const router = useRouter()
 
-    useEffect(() => {
-        const token = getAuthToken()
-        const role = getUserRole()
-        const name = localStorage.getItem("name")
-
-        if (!token || role !== "MANAGER") {
-            router.replace("/login")
-            return
-        }
-
-        if (name) setManagerName(name)
-        fetchMessages()
-    }, [])
-
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         setLoading(true)
         try {
             const res = await api.get("/manager/pengaduan")
@@ -135,7 +121,21 @@ export default function ManagerInbox() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
+
+    useEffect(() => {
+        const token = getAuthToken()
+        const role = getUserRole()
+        const name = localStorage.getItem("name")
+
+        if (!token || role !== "MANAGER") {
+            router.replace("/login")
+            return
+        }
+
+        if (name) setManagerName(name)
+        fetchMessages()
+    }, [router, fetchMessages])
 
     const filteredMessages = useMemo(() => {
         return messages.filter(msg => {
@@ -245,6 +245,7 @@ export default function ManagerInbox() {
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
                 onLogout={handleLogout} 
+                activePage="pengaduan"
             />
 
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all duration-300 overflow-hidden">

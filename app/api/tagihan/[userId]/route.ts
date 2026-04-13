@@ -10,6 +10,16 @@ export async function GET(
     const { userId } = await params;
     const data = await prisma.tagihan.findMany({
       where: { userId: parseInt(userId) },
+      select: {
+        id: true,
+        bulan: true,
+        tahun: true,
+        meter_awal: true,
+        meter_akhir: true,
+        total_bayar: true,
+        status_bayar: true,
+        bukti_bayar: true,
+      },
       orderBy: { id: "desc" },
     });
     return NextResponse.json({ status: true, data });

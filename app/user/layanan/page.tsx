@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import SidebarUser from "@/components/User/SidebarUser"
-import { getAuthToken, getUserId, getUserRole, removeAuthToken } from "@/utils/cookies"
+import { getAuthToken, getUserRole } from "@/utils/cookies"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
 import { 
     Menu, Plus, Clock, CheckCircle, XCircle, 
     Droplets, PenTool, ClipboardList, Send 
 } from "lucide-react"
+import Image from "next/image"
 
 // API_BASE_URL dimigrasikan ke lib/axios.ts
 
@@ -79,9 +80,10 @@ export default function UserLayananPage() {
             } else {
                 toast.error("Gagal mengirim permintaan")
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
             toast.dismiss(loadingToast)
-            toast.error(error.response?.data?.message || "Terjadi kesalahan koneksi")
+            toast.error(err.response?.data?.message || "Terjadi kesalahan koneksi")
         }
     }
 
@@ -118,9 +120,11 @@ export default function UserLayananPage() {
                         </button>
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {authUser?.profile_picture ? (
-                                <img 
+                                <Image 
                                     src={authUser.profile_picture} 
                                     alt="Profile" 
+                                    width={44}
+                                    height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -164,7 +168,7 @@ export default function UserLayananPage() {
                                     <ClipboardList size={40} />
                                 </div>
                                 <h4 className="font-bold text-lg">Belum Ada Permintaan</h4>
-                                <p className="text-slate-500 text-sm">Klik tombol "Buat Permintaan" untuk mengajukan layanan baru.</p>
+                                <p className="text-slate-500 text-sm">Klik tombol &quot;Buat Permintaan&quot; untuk mengajukan layanan baru.</p>
                             </div>
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2">

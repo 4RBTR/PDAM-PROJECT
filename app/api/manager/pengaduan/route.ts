@@ -16,7 +16,7 @@ export async function GET() {
     });
 
     return NextResponse.json({ status: true, data: list });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { status: false, message: "Gagal ambil data" },
       { status: 500 }

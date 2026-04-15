@@ -107,7 +107,7 @@ export default function KasirDashboard() {
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all duration-300">
                 
                 {/* Header / Navbar */}
-                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
+                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setIsSidebarOpen(true)} 
@@ -151,7 +151,7 @@ export default function KasirDashboard() {
                             <p className="text-2xl font-black">Rp 5.000</p>
                         </div>
                         {/* Dekorasi Abstract */}
-                        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

@@ -101,7 +101,7 @@ export default function UserLayananPage() {
             />
 
             <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 lg:ml-72 pb-24">
-                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20">
+                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors">
                             <Menu size={24} />
@@ -137,7 +137,7 @@ export default function UserLayananPage() {
                 <div className="p-6 lg:p-10 max-w-6xl mx-auto w-full space-y-10">
                     {/* INFO HERO */}
                     <div className="bg-linear-to-r from-blue-700 to-indigo-700 rounded-4xl p-8 text-white relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-xl -translate-y-1/2 translate-x-1/2"></div>
                         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                             <div className="space-y-3 text-center md:text-left">
                                 <h2 className="text-3xl font-black">Butuh Bantuan Teknis?</h2>

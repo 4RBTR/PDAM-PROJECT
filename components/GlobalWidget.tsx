@@ -31,7 +31,7 @@ export default function GlobalWidget() {
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-500 print:hidden">
             
             {/* Widget Jam Realtime */}
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 shadow-lg px-4 py-2 rounded-2xl flex items-center gap-3 transition-colors duration-300">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 shadow-lg px-4 py-2 rounded-2xl flex items-center gap-3 transition-colors duration-300">
                 <div className="bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-1.5 rounded-lg">
                     <Clock size={16} />
                 </div>
@@ -48,7 +48,7 @@ export default function GlobalWidget() {
             {/* Tombol Tema */}
             <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 shadow-lg p-3 rounded-2xl text-slate-700 dark:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 group flex items-center justify-center"
+                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 shadow-lg p-3 rounded-2xl text-slate-700 dark:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 group flex items-center justify-center"
                 aria-label="Toggle Theme"
             >
                 {theme === "dark" ? (

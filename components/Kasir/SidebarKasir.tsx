@@ -10,7 +10,8 @@ import {
     LogOut, 
     Droplets,
     X,
-    ClipboardList
+    ClipboardList,
+    FileText
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -26,10 +27,11 @@ export default function SidebarKasir({ isOpen, onClose, onLogout }: SidebarProps
 
     const menus = [
         { label: "Dashboard", href: "/kasir/dashboard", icon: <LayoutDashboard size={20} /> },
-        { label: "Input Tagihan", href: "/kasir/dashboard", icon: <Droplets size={20} /> }, // Reuse dashboard link for primary action or keep both? Sub-labels?
+        { label: "Input Tagihan", href: "/kasir/dashboard", icon: <Droplets size={20} /> },
         { label: "Verifikasi Bayar", href: "/kasir/verifikasi", icon: <CheckCircle size={20} /> },
         { label: "Kelola Pelanggan", href: "/kasir/pelanggan", icon: <Users size={20} /> },
         { label: "Kelola Layanan", href: "/kasir/layanan", icon: <ClipboardList size={20} /> },
+        { label: "Laporan Transaksi", href: "/kasir/laporan", icon: <FileText size={20} /> },
         { label: "Profil Saya", href: "/kasir/profile", icon: <Users size={20} /> },
     ]
 

@@ -1,24 +1,10 @@
-'use client'
-
-import React, { useState, useEffect } from 'react'
+import React, { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getAuthToken, getUserName, getUserRole } from '@/utils/cookies'
+import ClientNavbar from '@/components/ClientNavbar'
+import ClientHeroAuth from '@/components/ClientHeroAuth'
 
 export default function Home() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userName, setUserName] = useState("")
-  const [userRole, setUserRole] = useState("")
-
-  useEffect(() => {
-    const token = getAuthToken()
-    if (token) {
-      setIsLoggedIn(true)
-      setUserName(getUserName() || "User")
-      setUserRole(getUserRole() || "")
-    }
-  }, [])
 
   return (
     // WRAPPER UTAMA
@@ -29,105 +15,14 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-size-[50px_50px] opacity-[0.3]"></div>
 
         {/* Soft Radial Gradients */}
-        <div className="absolute top-[-20%] right-[-10%] w-200 h-200 bg-sky-200/30 dark:bg-sky-900/40 rounded-full blur-[120px] mix-blend-multiply animate-pulse"></div>
-        <div className="absolute bottom-[-10%] left-[-20%] w-200 h-200 bg-indigo-200/30 dark:bg-indigo-900/40 rounded-full blur-[120px] mix-blend-multiply"></div>
+        <div className="absolute top-[-20%] right-[-10%] w-200 h-200 bg-sky-200/30 dark:bg-sky-900/40 rounded-full blur-[80px] mix-blend-multiply"></div>
+        <div className="absolute bottom-[-10%] left-[-20%] w-200 h-200 bg-indigo-200/30 dark:bg-indigo-900/40 rounded-full blur-[80px] mix-blend-multiply"></div>
       </div>
 
       {/* --- THE OBSIDIAN GLASS NAVBAR --- */}
-      <div className="fixed top-0 left-0 right-0 z-100 flex justify-center p-4 md:p-6 pointer-events-none">
-        <nav
-          className={`
-            w-full max-w-6xl pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
-            rounded-[22px] border relative group/nav
-            ${isMobileMenuOpen
-              ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl'
-              : 'bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-white/30 dark:border-slate-800/50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:bg-white/70 dark:hover:bg-slate-900/80 hover:border-white/50 dark:hover:border-slate-800/80'}
-          `}
-        >
-          {/* Top subtle highlight line */}
-          <div className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent"></div>
-
-          <div className="px-5 md:px-8 h-14 md:h-17 flex justify-between items-center relative z-10">
-
-            {/* Logo Section - Minimalist yet Bold */}
-            <Link href="/" className="flex items-center gap-3 group/logo">
-              <div className="relative w-9 h-9 flex items-center justify-center">
-                <div className="absolute inset-0 bg-slate-900 rounded-xl transition-all duration-500 group-hover/logo:rotate-10 group-hover/logo:bg-indigo-600 group-hover/logo:shadow-[0_0_20px_rgba(79,70,229,0.4)]"></div>
-                <span className="relative z-10 text-white font-black text-lg">H</span>
-              </div>
-              <div className="hidden sm:flex flex-col gap-0">
-                <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-slate-100 leading-tight">hydro-flowsystems<span className="text-indigo-600 dark:text-indigo-400">.</span></span>
-                <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] -mt-0.5">Pintar AI</span>
-              </div>
-            </Link>
-
-
-            {/* Desktop Menu - Invisible Pill Style */}
-            <div className="hidden md:flex items-center gap-2">
-              {['About', 'Services', 'Contact'].map((item) => (
-                <Link
-                  key={item}
-                  href={`/${item.toLowerCase()}`}
-                  className="px-4 py-2 text-[13px] font-bold text-slate-500 hover:text-indigo-600 rounded-full transition-all duration-300 relative group/item"
-                >
-                  <span className="relative z-10">{item}</span>
-                  <span className="absolute inset-0 bg-slate-900/5 rounded-full scale-50 opacity-0 group-hover/item:scale-100 group-hover/item:opacity-100 transition-all duration-300"></span>
-                </Link>
-              ))}
-            </div>
-
-            {/* Right Side - Premium CTAs */}
-            <div className="flex items-center gap-3 md:gap-5">
-              {isLoggedIn ? (
-                <Link
-                  href={userRole === "MANAGER" ? "/manager/dashboard" : userRole === "KASIR" ? "/kasir/dashboard" : "/user/dashboard"}
-                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-full text-[13px] font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
-                >
-                  Dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link href="/login" className="hidden md:block text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                    Masuk
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-[13px] font-bold shadow-[0_10px_20px_-5px_rgba(15,23,42,0.3)] hover:shadow-indigo-500/40 hover:bg-indigo-600 dark:hover:bg-slate-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
-                  >
-                    Get Started
-                  </Link>
-                </>
-              )}
-
-              {/* Mobile Menu Toggle - Sleek Minimalist */}
-              <button
-                className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-100/50 outline-none"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                <div className={`h-0.5 bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'w-5 rotate-45 translate-y-1' : 'w-5'}`}></div>
-                <div className={`h-0.5 bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'w-5 -rotate-45 -translate-y-1' : 'w-3 self-end mr-2.5'}`}></div>
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Overlay Menu */}
-          <div className={`
-            md:hidden overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
-            ${isMobileMenuOpen ? 'max-h-100 border-t border-slate-100 opacity-100 scale-100' : 'max-h-0 opacity-0 scale-95'}
-          `}>
-            <div className="p-6 space-y-1">
-              {['About', 'Services', 'Contact'].map((item) => (
-                <Link key={item} href={`/${item.toLowerCase()}`} className="flex items-center p-3 text-base font-bold text-slate-600 rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition-all">
-                  {item}
-                </Link>
-              ))}
-              <div className="pt-4 mt-2 border-t border-slate-50">
-                <Link href="/login" className="block w-full py-4 text-center font-bold text-slate-900 rounded-xl hover:bg-slate-50 transition">Masuk ke Akun</Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-      </div>
+      <Suspense fallback={null}>
+        <ClientNavbar />
+      </Suspense>
       {/* --- HERO SECTION --- */}
       <main className="pt-32 pb-20 md:pt-48 md:pb-32 container mx-auto px-4 md:px-6 relative z-10 flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
 
@@ -168,8 +63,10 @@ export default function Home() {
                     <Image 
                         src={`https://i.pravatar.cc/100?img=${imgIdx}`}
                         alt="User"
-                        fill
-                        className="object-cover"
+                        width={36}
+                        height={36}
+                        loading="eager"
+                        className="object-cover w-full h-full"
                     />
                 </div>
               ))}
@@ -187,10 +84,10 @@ export default function Home() {
         {/* Right Column: Visual Mockup (Lebih 3D & Modern) */}
         <div className="flex-1 w-full max-w-100 md:max-w-xl perspective-1000 lg:mt-0 relative animate-in fade-in slide-in-from-right-10 duration-1000 delay-300">
           {/* Dekorasi Belakang Mockup */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-linear-to-tr from-sky-300/20 via-indigo-300/20 to-violet-300/20 rounded-full blur-3xl -z-10 animate-pulse"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-linear-to-tr from-sky-300/20 via-indigo-300/20 to-violet-300/20 rounded-full blur-2xl -z-10"></div>
 
           <div className="relative group">
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] border border-white/60 p-2 transform transition-all duration-700 hover:scale-[1.02]">
+            <div className="relative bg-white/80 backdrop-blur-lg rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] border border-white/60 p-2 transform transition-all duration-700 hover:scale-[1.02]">
 
               {/* Inner Bezel */}
               <div className="bg-slate-50 rounded-4xl overflow-hidden border border-slate-100/50">
@@ -199,19 +96,19 @@ export default function Home() {
                 <div className="bg-white border-b border-slate-100 p-5 flex gap-3 items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dashboard</span>
-                    <span className="text-sm font-bold text-slate-800">Halo, {isLoggedIn ? userName : "Budi Santoso"} 👋</span>
+                    <Suspense fallback={<span className="text-sm font-bold text-slate-800">Halo, Budi Santoso 👋</span>}>
+                      <ClientHeroAuth />
+                    </Suspense>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-sm overflow-hidden flex items-center justify-center relative">
-                    {isLoggedIn ? (
-                      <div className="w-full h-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">{userName.charAt(0)}</div>
-                    ) : (
-                      <Image 
-                        src="https://i.pravatar.cc/100?img=12" 
-                        alt="Mock Avatar" 
-                        fill
-                        className="object-cover" 
-                      />
-                    )}
+                    <Image 
+                      src="https://i.pravatar.cc/100?img=12" 
+                      alt="Mock Avatar" 
+                      width={32}
+                      height={32}
+                      loading="eager"
+                      className="object-cover w-full h-full" 
+                    />
                   </div>
                 </div>
 
@@ -219,7 +116,7 @@ export default function Home() {
                 <div className="p-6 md:p-8 space-y-6 bg-slate-50/50 dark:bg-slate-900/50">
                   {/* Saldo Section (Glass Dark) */}
                   <div className="group/card bg-linear-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden transition-all hover:scale-[1.02]">
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl translate-x-10 -translate-y-10 group-hover/card:bg-indigo-500/30 transition-all"></div>
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-xl translate-x-10 -translate-y-10 group-hover/card:bg-indigo-500/30 transition-all"></div>
                     <div className="relative z-10">
                       <div className="flex justify-between items-start mb-4">
                         <div className="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Tagihan</div>
@@ -275,7 +172,7 @@ export default function Home() {
       {/* --- STATS SECTION --- */}
       <section className="bg-slate-900 py-20 -skew-y-2 relative z-20 -mx-10 md:mx-0 overflow-hidden border-y-[6px] border-slate-800 shadow-2xl">
         {/* Abstract Background */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+        <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27noise%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.65%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23noise)%27/%3E%3C/svg%3E")'}}></div>
         <div className="absolute top-0 left-0 w-full h-full bg-linear-to-b from-transparent to-slate-950/80"></div>
 
         <div className="container mx-auto px-6 skew-y-2 relative z-10">
@@ -333,7 +230,7 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-sky-500/30 rounded-full blur-[80px] -translate-x-1/3 translate-y-1/3 group-hover:-translate-x-1/4 transition-transform duration-1000"></div>
 
             {/* Grid Overlay */}
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+            <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27noise%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.65%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23noise)%27/%3E%3C/svg%3E")'}}></div>
 
             <div className="relative z-10 max-w-3xl mx-auto space-y-8">
               <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">Siap Beralih ke Digital? <br /> <span className="text-indigo-200">Mulai langkah Anda hari ini.</span></h2>

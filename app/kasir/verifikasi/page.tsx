@@ -4,9 +4,10 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import toast from "react-hot-toast"
-import { getAuthToken, getUserRole, getUserId } from "@/utils/cookies"
+import { getAuthToken, getUserRole } from "@/utils/cookies"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
 import api from "@/lib/axios"
+import { useAuth } from "@/context/AuthContext"
 import { 
     Menu, 
     CheckCircle, 
@@ -28,24 +29,17 @@ interface ITagihanVerifikasi {
     status: string;
 }
 
-interface IUserProfile {
-    id: number;
-    name: string;
-    email: string;
-    profile_picture: string | null;
-}
 
 export default function VerifikasiPage() {
     // API_URL dimigrasikan ke lib/axios.ts
     const router = useRouter()
+    const { user: authUser, logout } = useAuth()
 
     // --- STATE ---
     const [list, setList] = useState<ITagihanVerifikasi[]>([])
     const [loading, setLoading] = useState(true)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
-    const [name, setName] = useState("Kasir")
-    const [kasirProfile, setKasirProfile] = useState<IUserProfile | null>(null)
 
     // --- STATE MODAL & PROSES ---
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -75,19 +69,6 @@ export default function VerifikasiPage() {
             router.push("/login")
             return
         }
-        const fetchProfile = async () => {
-            try {
-                const res = await api.get(`/user/${getUserId()}`)
-                const data = res.data
-                if (data.status) {
-                    setName(data.data.name)
-                    setKasirProfile(data.data)
-                }
-            } catch (error) {
-                console.error(error)
-            }
-        }
-        fetchProfile()
         loadData()
     }, [router, loadData])
 
@@ -96,9 +77,7 @@ export default function VerifikasiPage() {
     )
 
     const handleLogout = () => {
-        localStorage.clear()
-        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
-        router.push('/')
+        logout()
     }
 
     const openConfirmModal = (item: ITagihanVerifikasi, type: 'TERIMA' | 'TOLAK') => {
@@ -161,7 +140,7 @@ export default function VerifikasiPage() {
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all">
                 
                 {/* Header Section */}
-                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
+                <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors">
                             <Menu size={24} />
@@ -184,16 +163,16 @@ export default function VerifikasiPage() {
                             />
                         </div>
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
-                            {kasirProfile?.profile_picture ? (
+                            {authUser?.profile_picture ? (
                                 <Image 
-                                    src={kasirProfile.profile_picture.startsWith('http') ? kasirProfile.profile_picture : `/api/uploads/${kasirProfile.profile_picture}`} 
+                                    src={authUser.profile_picture.startsWith('http') ? authUser.profile_picture : `/api/uploads/${authUser.profile_picture}`} 
                                     alt="Profile" 
                                     width={44}
                                     height={44}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                (name || "K").charAt(0).toUpperCase()
+                                (authUser?.name || "K").charAt(0).toUpperCase()
                             )}
                         </div>
                     </div>
@@ -210,7 +189,7 @@ export default function VerifikasiPage() {
                         <div className="z-10 bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20">
                             <Clock size={32} className="text-white" />
                         </div>
-                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-xl"></div>
                     </div>
 
                     {/* List Cards */}

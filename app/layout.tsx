@@ -20,8 +20,6 @@ export const metadata: Metadata = {
   description: "Sistem Manajemen Air Modern",
 };
 
-import { AuthProvider } from '@/context/AuthContext';
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,14 +31,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <Toaster
-              position="top-center"
-              reverseOrder={false}
-            />
-            <GlobalWidget />
-            {children}
-          </AuthProvider>
+          <Toaster
+            position="top-center"
+            reverseOrder={false}
+          />
+          <GlobalWidget />
+          {children}
         </ThemeProvider>
       </body>
     </html>

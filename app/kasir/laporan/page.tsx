@@ -8,10 +8,12 @@ import {
     Search, FileText, Eye,
     ChevronLeft, ChevronRight, Menu, Download
 } from "lucide-react"
-import { getAuthToken, getUserRole, removeAuthToken } from "@/utils/cookies"
-import SidebarManager from "@/components/Manager/SidebarManager"
+import { getAuthToken, getUserRole } from "@/utils/cookies"
+import SidebarKasir from "@/components/Kasir/SidebarKasir"
+import { useAuth } from "@/context/AuthContext"
 import api from "@/lib/axios"
 // html2canvas and jsPDF are dynamically imported in handleExportPDF to reduce bundle size
+import Image from "next/image"
 
 // Lazy load InvoiceModal
 const InvoiceModal = dynamic(() => import("@/components/User/InvoiceModal"), {
@@ -32,9 +34,9 @@ interface ITagihan {
     userId: number;
 }
 
-export default function LaporanManager() {
+export default function LaporanKasir() {
+    const { user: authUser, logout } = useAuth()
     const [transaksi, setTransaksi] = useState<ITagihan[]>([])
-    const [managerName, setManagerName] = useState("")
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [loading, setLoading] = useState(true)
 
@@ -54,19 +56,18 @@ export default function LaporanManager() {
     useEffect(() => {
         const token = getAuthToken()
         const role = getUserRole()
-        const name = localStorage.getItem("name")
 
-        if (!token || role !== "MANAGER") {
+        if (!token || role !== "KASIR") {
             router.replace("/login")
             return
         }
 
-        if (name) setManagerName(name)
         fetchLaporanData()
     }, [router])
 
     const fetchLaporanData = async () => {
         try {
+            // Reuse the manager dashboard endpoint which returns all transactions
             const res = await api.get("/manager/dashboard")
             if (res.data.status) {
                 setTransaksi(res.data.data)
@@ -79,9 +80,7 @@ export default function LaporanManager() {
     }
 
     const handleLogout = () => {
-        removeAuthToken()
-        localStorage.removeItem("name")
-        router.push('/')
+        logout()
     }
 
     // --- FILTER LOGIC ---
@@ -110,9 +109,9 @@ export default function LaporanManager() {
     const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem)
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage))
 
-    // Export full table to PDF
+    // Export PDF
     const handleExportPDF = async () => {
-        const tableEl = document.getElementById("laporan-table")
+        const tableEl = document.getElementById("kasir-laporan-table")
         if (!tableEl) return
         const loadingToast = toast.loading("Membuat laporan PDF...")
         try {
@@ -124,7 +123,7 @@ export default function LaporanManager() {
             const pdfWidth = pdf.internal.pageSize.getWidth()
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width
             pdf.addImage(imgData, "PNG", 0, 10, pdfWidth, pdfHeight, undefined, 'FAST')
-            pdf.save(`Laporan_HydroFlow_${new Date().toISOString().slice(0, 10)}.pdf`)
+            pdf.save(`Laporan_Kasir_${new Date().toISOString().slice(0, 10)}.pdf`)
             toast.success("Laporan PDF berhasil diunduh!", { id: loadingToast })
         } catch {
             toast.error("Gagal membuat PDF.", { id: loadingToast })
@@ -138,7 +137,7 @@ export default function LaporanManager() {
 
     return (
         <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
-            <SidebarManager
+            <SidebarKasir
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
                 onLogout={handleLogout}
@@ -152,13 +151,17 @@ export default function LaporanManager() {
                             <Menu size={24} />
                         </button>
                         <div>
-                            <h1 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Laporan Tahunan</h1>
-                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest mt-1.5">Executive Reporting</p>
+                            <h1 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 tracking-tight leading-none">Laporan Transaksi</h1>
+                            <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-1.5">Officer Report</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 bg-linear-to-tr from-indigo-600 to-blue-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-indigo-200 ring-4 ring-white">
-                            {managerName.charAt(0).toUpperCase()}
+                        <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
+                            {authUser?.profile_picture ? (
+                                <Image src={authUser.profile_picture} alt="Profile" width={44} height={44} className="w-full h-full object-cover" />
+                            ) : (
+                                (authUser?.name || "K").charAt(0).toUpperCase()
+                            )}
                         </div>
                     </div>
                 </header>
@@ -169,13 +172,13 @@ export default function LaporanManager() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                         <div>
                             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                                <FileText className="text-indigo-600 dark:text-indigo-400" /> Laporan Transaksi Detail
+                                <FileText className="text-blue-600 dark:text-blue-400" /> Laporan Transaksi
                             </h1>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm">Data riil penggunaan air dan status keuangan pelanggan.</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm">Riwayat seluruh transaksi tagihan pelanggan.</p>
                         </div>
                         <button
                             onClick={handleExportPDF}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95"
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-200 dark:shadow-none active:scale-95"
                         >
                             <Download size={18} /> Export PDF
                         </button>
@@ -189,7 +192,7 @@ export default function LaporanManager() {
                         </div>
                         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-colors">
                             <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Konsumsi Air</p>
-                            <h3 className="text-xl font-black text-indigo-600 dark:text-indigo-400">{ringkasan.totalAir} m³</h3>
+                            <h3 className="text-xl font-black text-blue-600 dark:text-blue-400">{ringkasan.totalAir} m³</h3>
                         </div>
                         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-colors">
                             <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Jumlah Transaksi</p>
@@ -205,7 +208,7 @@ export default function LaporanManager() {
                                 <input
                                     type="text"
                                     placeholder="Cari Pelanggan..."
-                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -230,23 +233,23 @@ export default function LaporanManager() {
                                     <option key={b} value={b}>{b}</option>
                                 ))}
                             </select>
-                            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-bold italic">
-                                *Data sinkron otomatis dengan server
+                            <div className="flex items-center gap-2 text-slate-400 text-xs font-bold italic">
+                                *Data sinkron otomatis
                             </div>
                         </div>
                     </div>
 
                     {/* Table */}
-                    <div id="laporan-table" className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                    <div id="kasir-laporan-table" className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
                                     <tr>
-                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Detail Pelanggan</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Pelanggan</th>
                                         <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Periode</th>
                                         <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase text-center">Meter</th>
                                         <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase text-center">Konsumsi</th>
-                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Total Tagihan</th>
+                                        <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Tagihan</th>
                                         <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Status</th>
                                         <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase text-center">Aksi</th>
                                     </tr>
@@ -271,16 +274,16 @@ export default function LaporanManager() {
                                             <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all">
                                                 <td className="px-6 py-4">
                                                     <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">{item.user.name}</p>
-                                                    <p className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter">TRX-ID: {item.id}</p>
+                                                    <p className="text-[10px] font-mono text-slate-400 uppercase">TRX-{item.id}</p>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-300">
                                                     {item.bulan} {item.tahun}
                                                 </td>
-                                                <td className="px-6 py-4 text-center text-sm font-mono text-slate-500 dark:text-slate-400">
-                                                    {item.meter_awal} - {item.meter_akhir}
+                                                <td className="px-6 py-4 text-center text-sm font-mono text-slate-500">
+                                                    {item.meter_awal} → {item.meter_akhir}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2.5 py-1 rounded-lg text-xs font-black">
+                                                    <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-lg text-xs font-black">
                                                         {item.meter_akhir - item.meter_awal} m³
                                                     </span>
                                                 </td>
@@ -300,7 +303,7 @@ export default function LaporanManager() {
                                                     {item.status_bayar === 'LUNAS' ? (
                                                         <button
                                                             onClick={() => handleViewInvoice(item)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors"
                                                         >
                                                             <Eye size={14} /> Invoice
                                                         </button>
@@ -318,7 +321,7 @@ export default function LaporanManager() {
                         {/* Pagination */}
                         <div className="p-6 bg-slate-50/50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
-                                Menampilkan {currentItems.length} dari {filteredData.length} Data
+                                {currentItems.length} dari {filteredData.length} Data
                             </p>
                             <div className="flex gap-2">
                                 <button

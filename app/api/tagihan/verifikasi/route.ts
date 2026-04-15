@@ -1,4 +1,5 @@
 // app/api/tagihan/verifikasi/route.ts - GET /api/tagihan/verifikasi (Kasir: list verifikasi)
+// Optimized: select only needed fields
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -6,7 +7,16 @@ export async function GET() {
   try {
     const data = await prisma.tagihan.findMany({
       where: { status_bayar: "MENUNGGU_VERIFIKASI" },
-      include: { user: true },
+      select: {
+        id: true,
+        bulan: true,
+        tahun: true,
+        total_bayar: true,
+        bukti_bayar: true,
+        user: {
+          select: { name: true },
+        },
+      },
     });
 
     const formatted = data.map((item) => ({

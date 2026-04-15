@@ -183,7 +183,7 @@ export default function ContactPage() {
                     <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-4xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none border border-slate-100 dark:border-slate-800 relative overflow-hidden transition-colors">
 
                         {/* Dekorasi Form */}
-                        <div className="absolute -top-12.5 -right-12.5 w-40 h-40 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+                        <div className="absolute -top-12.5 -right-12.5 w-40 h-40 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-xl opacity-60 pointer-events-none"></div>
 
                         <div className="relative z-10 mb-8">
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Kirim Pesan</h3>

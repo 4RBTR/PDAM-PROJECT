@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTheme } from "next-themes"
-import { Moon, Sun, Clock } from "lucide-react"
+import { Clock } from "lucide-react"
 
 export default function GlobalWidget() {
     const [mounted, setMounted] = useState(false)
-    const { theme, setTheme } = useTheme()
     const [currentTime, setCurrentTime] = useState<Date | null>(null)
 
     // Menyelesaikan masalah hidrasi Next.js
@@ -45,18 +43,6 @@ export default function GlobalWidget() {
                 </div>
             </div>
 
-            {/* Tombol Tema */}
-            <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 shadow-lg p-3 rounded-2xl text-slate-700 dark:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 group flex items-center justify-center"
-                aria-label="Toggle Theme"
-            >
-                {theme === "dark" ? (
-                    <Sun size={20} strokeWidth={2.5} className="group-hover:rotate-180 transition-transform duration-500" />
-                ) : (
-                    <Moon size={20} strokeWidth={2.5} className="group-hover:-rotate-12 transition-transform duration-500 text-slate-600" />
-                )}
-            </button>
             
         </div>
     )

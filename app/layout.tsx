@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from '@/components/ThemeProvider';
 import GlobalWidget from '@/components/GlobalWidget';
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -32,16 +31,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Analytics />
+        <SpeedInsights />
           <Toaster
             position="top-center"
             reverseOrder={false}
           />
           <GlobalWidget />
           {children}
-        </ThemeProvider>
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

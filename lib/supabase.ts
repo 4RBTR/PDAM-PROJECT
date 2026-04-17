@@ -19,11 +19,17 @@ export async function uploadToStorage(
 
   const admin = getSupabaseAdmin();
   
+  // Convert File/Blob to a buffer, which is much more reliable on Vercel/Node.js environments
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const fileType = file.type || 'image/jpeg';
+  
   const { error } = await admin.storage
     .from(BUCKET_NAME)
-    .upload(filePath, file, {
+    .upload(filePath, buffer, {
       cacheControl: "3600",
       upsert: true,
+      contentType: fileType,
     });
 
   if (error) {

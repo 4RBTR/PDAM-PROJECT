@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import GlobalWidget from '@/components/GlobalWidget';
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +32,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300`}
       >
+        <SpeedInsights />
+        <Analytics />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster
             position="top-center"
@@ -38,6 +42,8 @@ export default function RootLayout({
           <GlobalWidget />
           {children}
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

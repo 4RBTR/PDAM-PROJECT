@@ -12,6 +12,8 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@supabase/supabase-js": "^2.102.1",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",

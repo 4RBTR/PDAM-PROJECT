@@ -104,11 +104,16 @@ export default function TagihanList({ tagihan, loading, onUpload, onViewInvoice 
                         <div className="p-5 md:p-10 md:w-80 bg-slate-50/50 dark:bg-slate-800/20 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 flex items-center print:hidden">
                             {t.status_bayar === "LUNAS" ? (
                                 <button onClick={() => onViewInvoice(t)} className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all">
-                                    <Eye size={16} /> Lihat Invoce
+                                    <Eye size={16} /> Lihat Invoice
                                 </button>
                             ) : t.status_bayar === "MENUNGGU_VERIFIKASI" ? (
-                                <div className="w-full text-center text-[11px] font-black text-amber-600/70 uppercase tracking-widest italic">
-                                    Sedang Diverifikasi
+                                <div className="w-full space-y-3">
+                                    <button onClick={() => onViewInvoice(t)} className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300">
+                                        <Eye size={16} /> Lihat Tagihan
+                                    </button>
+                                    <div className="w-full text-center text-[11px] font-black text-amber-600/70 uppercase tracking-widest italic pt-2">
+                                        Sedang Diverifikasi
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="w-full space-y-3">
@@ -129,9 +134,14 @@ export default function TagihanList({ tagihan, loading, onUpload, onViewInvoice 
                                             </div>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setUploadingId(t.id)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
-                                            <CreditCard size={18} /> Bayar Tagihan
-                                        </button>
+                                        <>
+                                            <button onClick={() => setUploadingId(t.id)} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
+                                                <CreditCard size={18} /> Bayar Tagihan
+                                            </button>
+                                            <button onClick={() => onViewInvoice(t)} className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all text-slate-600 dark:text-slate-300">
+                                                <Eye size={16} /> Lihat Tagihan
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             )}

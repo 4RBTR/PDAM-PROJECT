@@ -8,13 +8,13 @@ import { getAuthToken, getUserRole } from "@/utils/cookies"
 import SidebarKasir from "@/components/Kasir/SidebarKasir"
 import api from "@/lib/axios"
 import { useAuth } from "@/context/AuthContext"
-import { 
-    Menu, 
-    CheckCircle, 
-    XCircle, 
-    ExternalLink, 
-    Search, 
-    Clock, 
+import {
+    Menu,
+    CheckCircle,
+    XCircle,
+    ExternalLink,
+    Search,
+    Clock,
     AlertCircle,
     Trash2
 } from "lucide-react"
@@ -72,7 +72,7 @@ export default function VerifikasiPage() {
         loadData()
     }, [router, loadData])
 
-    const filteredList = list.filter(item => 
+    const filteredList = list.filter(item =>
         item.userName.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
@@ -130,19 +130,19 @@ export default function VerifikasiPage() {
         <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 flex transition-colors duration-300">
 
             {/* Sidebar Komponen */}
-            <SidebarKasir 
-                isOpen={isSidebarOpen} 
-                onClose={() => setIsSidebarOpen(false)} 
-                onLogout={handleLogout} 
+            <SidebarKasir
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                onLogout={handleLogout}
             />
 
             {/* Konten Utama */}
             <main className="flex-1 flex flex-col min-w-0 lg:ml-72 transition-all">
-                
+
                 {/* Header Section */}
                 <header className="bg-white/60 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 lg:px-10 py-5 flex justify-between items-center sticky top-0 z-20 transition-colors duration-300">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors">
+                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 transition-colors" title="button">
                             <Menu size={24} />
                         </button>
                         <div>
@@ -150,13 +150,13 @@ export default function VerifikasiPage() {
                             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1.5">Konfirmasi Transaksi</p>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                         <div className="hidden md:block relative w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
-                            <input 
-                                type="text" 
-                                placeholder="Cari nama pelanggan..." 
+                            <input
+                                type="text"
+                                placeholder="Cari nama pelanggan..."
                                 className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 outline-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -164,9 +164,9 @@ export default function VerifikasiPage() {
                         </div>
                         <div className="w-11 h-11 bg-linear-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-200 ring-4 ring-white overflow-hidden relative">
                             {authUser?.profile_picture ? (
-                                <Image 
-                                    src={authUser.profile_picture.startsWith('http') ? authUser.profile_picture : `/api/uploads/${authUser.profile_picture}`} 
-                                    alt="Profile" 
+                                <Image
+                                    src={authUser.profile_picture.startsWith('http') ? authUser.profile_picture : `/api/uploads/${authUser.profile_picture}`}
+                                    alt="Profile"
                                     width={44}
                                     height={44}
                                     className="w-full h-full object-cover"
@@ -179,7 +179,7 @@ export default function VerifikasiPage() {
                 </header>
 
                 <div className="p-6 lg:p-10 max-w-6xl mx-auto w-full space-y-8">
-                    
+
                     {/* Status Ringkas */}
                     <div className="bg-blue-600 rounded-4xl p-8 text-white shadow-xl shadow-blue-100 flex items-center justify-between overflow-hidden relative">
                         <div className="z-10">
@@ -210,16 +210,16 @@ export default function VerifikasiPage() {
                                     <div className="flex flex-col lg:flex-row gap-8">
                                         {/* Bagian Gambar */}
                                         <div className="w-full lg:w-48 h-48 relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
-                                            <Image 
+                                            <Image
                                                 src={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `/api/uploads/${item.bukti_bayar}`}
                                                 alt="Bukti Transfer"
                                                 fill
                                                 className="object-cover group-hover:scale-110 transition-transform duration-500"
                                                 unoptimized
                                             />
-                                            <a 
-                                                href={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `/api/uploads/${item.bukti_bayar}`} 
-                                                target="_blank" 
+                                            <a
+                                                href={item.bukti_bayar.startsWith('http') ? item.bukti_bayar : `/api/uploads/${item.bukti_bayar}`}
+                                                target="_blank"
                                                 className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
                                             >
                                                 <ExternalLink className="text-white" size={24} />
@@ -244,21 +244,21 @@ export default function VerifikasiPage() {
                                                     <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Nominal Transfer</p>
                                                     <p className="text-2xl font-black text-slate-800 dark:text-slate-100">Rp {item.total_bayar.toLocaleString('id-ID')}</p>
                                                 </div>
-                                                
+
                                                 <div className="flex items-center gap-3">
-                                                    <button 
+                                                    <button
                                                         onClick={() => openConfirmModal(item, 'TERIMA')}
                                                         className="flex-1 h-full bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 dark:shadow-none transition-all active:scale-95"
                                                     >
                                                         <CheckCircle size={18} /> Terima
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={() => openConfirmModal(item, 'TOLAK')}
                                                         className="flex-1 h-full bg-white dark:bg-transparent border-2 border-rose-100 dark:border-rose-900 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/40 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                                                     >
                                                         <XCircle size={18} /> Tolak
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleDelete(item.id)}
                                                         className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-2xl transition-all active:scale-95"
                                                         title="Hapus Antrean"
@@ -273,7 +273,7 @@ export default function VerifikasiPage() {
                             ))}
                         </div>
                     )}
-                    
+
                     <div className="text-center mt-12 text-slate-400 dark:text-slate-500 text-sm font-medium">
                         <p>&copy; {new Date().getFullYear()} Hydro-FlowSystems.</p>
                     </div>
@@ -292,7 +292,7 @@ export default function VerifikasiPage() {
                                 {actionType === 'TERIMA' ? 'Konfirmasi Lunas' : 'Tolak Bukti Bayar'}
                             </h3>
                             <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 font-medium">
-                                Anda akan {actionType === 'TERIMA' ? 'mensahkan' : 'menolak'} pembayaran senilai <br/>
+                                Anda akan {actionType === 'TERIMA' ? 'mensahkan' : 'menolak'} pembayaran senilai <br />
                                 <span className="font-black text-slate-800 dark:text-slate-100">Rp {selectedItem.total_bayar.toLocaleString('id-ID')}</span>
                             </p>
                         </div>
@@ -300,7 +300,7 @@ export default function VerifikasiPage() {
                         {actionType === 'TOLAK' && (
                             <div className="mb-6">
                                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2 ml-1">Alasan Penolakan</label>
-                                <textarea 
+                                <textarea
                                     className="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all resize-none dark:text-slate-200"
                                     rows={3}
                                     placeholder="Contoh: Foto buram atau nominal tidak sesuai..."
@@ -311,13 +311,13 @@ export default function VerifikasiPage() {
                         )}
 
                         <div className="flex gap-3">
-                            <button 
+                            <button
                                 onClick={closeModal}
                                 className="flex-1 py-4 text-sm font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
                             >
                                 Batal
                             </button>
-                            <button 
+                            <button
                                 onClick={handleProcess}
                                 disabled={processing}
                                 className={`flex-2 py-4 rounded-2xl text-sm font-black text-white uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2

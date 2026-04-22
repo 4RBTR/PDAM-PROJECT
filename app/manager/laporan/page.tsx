@@ -297,16 +297,16 @@ export default function LaporanManager() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    {item.status_bayar === 'LUNAS' ? (
-                                                        <button
-                                                            onClick={() => handleViewInvoice(item)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors"
-                                                        >
-                                                            <Eye size={14} /> Invoice
-                                                        </button>
-                                                    ) : (
-                                                        <span className="text-[10px] text-slate-400 italic">—</span>
-                                                    )}
+                                                    <button
+                                                        onClick={() => handleViewInvoice(item)}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                                            item.status_bayar === 'LUNAS' 
+                                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/50' 
+                                                            : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                        }`}
+                                                    >
+                                                        <Eye size={14} /> {item.status_bayar === 'LUNAS' ? 'Invoice' : 'Tagihan'}
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))

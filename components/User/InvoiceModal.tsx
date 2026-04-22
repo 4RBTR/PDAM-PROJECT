@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef } from "react"
-import { X, Download, Droplets, CheckCircle2, ArrowRight, Printer } from "lucide-react"
+import { X, Download, Droplets, CheckCircle2, ArrowRight, Printer, Clock, AlertCircle } from "lucide-react"
 import toast from "react-hot-toast"
 
 interface InvoiceModalProps {
@@ -29,7 +29,10 @@ export default function InvoiceModal({ isOpen, onClose, data, user }: InvoiceMod
     if (!isOpen) return null
 
     const usage = data.meter_akhir - data.meter_awal
-    const invoiceNumber = `INV-${String(data.id).padStart(6, '0')}`
+    const isPaid = data.status_bayar === "LUNAS"
+    const documentType = isPaid ? "Invoice" : "Tagihan"
+    const documentTitle = isPaid ? "Invoice Digital" : "Rincian Tagihan"
+    const documentNumber = isPaid ? `INV-${String(data.id).padStart(6, '0')}` : `BILL-${String(data.id).padStart(6, '0')}`
     const memberId = `#${String(user.id).padStart(5, '0')}`
 
     // Download PDF — uses html2canvas-pro (supports oklch) + jsPDF
@@ -60,7 +63,7 @@ export default function InvoiceModal({ isOpen, onClose, data, user }: InvoiceMod
             })
 
             pdf.addImage(imgData, "PNG", 5, 5, cardWidth, cardHeight, undefined, 'FAST')
-            pdf.save(`Invoice_HydroFlow_${data.bulan}_${data.tahun}_${user.name.replace(/\s+/g, '_')}.pdf`)
+            pdf.save(`${documentType}_HydroFlow_${data.bulan}_${data.tahun}_${user.name.replace(/\s+/g, '_')}.pdf`)
 
             toast.success("PDF berhasil diunduh!", { id: loadingToast })
         } catch (error) {
@@ -84,7 +87,7 @@ export default function InvoiceModal({ isOpen, onClose, data, user }: InvoiceMod
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Invoice ${invoiceNumber}</title>
+                <title>${documentTitle} ${documentNumber}</title>
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
@@ -123,8 +126,8 @@ export default function InvoiceModal({ isOpen, onClose, data, user }: InvoiceMod
                 {/* Header */}
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
                     <div>
-                        <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">Invoice Digital</h3>
-                        <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-0.5">{data.status_bayar}</p>
+                        <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">{documentTitle}</h3>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mt-0.5 ${isPaid ? "text-emerald-600" : data.status_bayar === "MENUNGGU_VERIFIKASI" ? "text-amber-600" : "text-rose-600"}`}>{data.status_bayar.replace('_', ' ')}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -157,8 +160,8 @@ export default function InvoiceModal({ isOpen, onClose, data, user }: InvoiceMod
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <p style={{ fontSize: '8px', fontWeight: 900, color: '#94A3B8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Invoice</p>
-                                <p style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>{invoiceNumber}</p>
+                                <p style={{ fontSize: '8px', fontWeight: 900, color: '#94A3B8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{documentType}</p>
+                                <p style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 900, color: '#0f172a', marginTop: '2px' }}>{documentNumber}</p>
                             </div>
                         </div>
 
@@ -223,9 +226,9 @@ export default function InvoiceModal({ isOpen, onClose, data, user }: InvoiceMod
                                         <span style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '-0.02em' }}>{data.total_bayar.toLocaleString('id-ID')}</span>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '12px', backgroundColor: 'rgba(52,211,153,0.15)' }}>
-                                    <CheckCircle2 size={16} color="#34D399" strokeWidth={3} />
-                                    <span style={{ fontSize: '12px', fontWeight: 900, color: '#34D399', textTransform: 'uppercase' }}>{data.status_bayar}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '12px', backgroundColor: isPaid ? 'rgba(52,211,153,0.15)' : data.status_bayar === 'MENUNGGU_VERIFIKASI' ? 'rgba(251,191,36,0.15)' : 'rgba(244,63,94,0.15)' }}>
+                                    {isPaid ? <CheckCircle2 size={16} color="#34D399" strokeWidth={3} /> : data.status_bayar === 'MENUNGGU_VERIFIKASI' ? <Clock size={16} color="#FBBF24" strokeWidth={3} /> : <AlertCircle size={16} color="#F43F5E" strokeWidth={3} />}
+                                    <span style={{ fontSize: '12px', fontWeight: 900, color: isPaid ? "#34D399" : data.status_bayar === 'MENUNGGU_VERIFIKASI' ? "#FBBF24" : "#F43F5E", textTransform: 'uppercase' }}>{data.status_bayar.replace('_', ' ')}</span>
                                 </div>
                             </div>
                         </div>

@@ -7,13 +7,13 @@ async function main() {
     const client = new Client({
         connectionString: process.env.DATABASE_URL
     });
-    
+
     try {
         await client.connect();
         console.log("🌱 Mulai mengisi data akun via RAW PG...");
-        
+
         const now = new Date();
-        
+
         // 1. DATA KASIR
         let res = await client.query('SELECT id FROM "User" WHERE email = $1', ['andra@gmail.com']);
         if (res.rowCount === 0) {
@@ -52,7 +52,7 @@ async function main() {
         } else {
             console.log(`✅ Akun Pelanggan sudah ada.`);
         }
-        
+
     } catch (e) {
         console.error(e);
     } finally {
